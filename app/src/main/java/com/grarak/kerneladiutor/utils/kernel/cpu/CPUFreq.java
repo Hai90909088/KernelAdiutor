@@ -78,6 +78,9 @@ public class CPUFreq {
     public static final String CPU_LOCK_FREQ = "/sys/kernel/cpufreq_hardlimit/userspace_dvfs_lock";
     private static final String CPU_SCALING_GOVERNOR = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor";
     private static final String CPU_AVAILABLE_GOVERNORS = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_governors";
+    private static final String CPU_RELATED_CPUS = "/sys/devices/system/cpu/cpu%d/cpufreq/related_cpus";
+    private static final String CPU_AFFECTED_CPUS = "/sys/devices/system/cpu/cpu%d/cpufreq/affected_cpus";
+    private static final String POLICY_RELATED_CPUS = "/sys/devices/system/cpu/cpufreq/policy%d/related_cpus";
     private static final String CPU_GOVERNOR_TUNABLES = "/sys/devices/system/cpu/cpufreq/%s";
     private static final String CPU_GOVERNOR_TUNABLES_CORE = "/sys/devices/system/cpu/cpu%d/cpufreq/%s";
 
@@ -86,7 +89,8 @@ public class CPUFreq {
     private int mLITTLECpu = -1;
     public int mCoreCtlMinCpu = 2;
     private SparseArray<List<Integer>> sFreqs = new SparseArray<>();
-    private String[] sGovernors;
+    private SparseArray<String[]> mClusterGovernors = new SparseArray<>();
+    private List<Cluster> mClusters;
 
     private CPUFreq(Context context) {
         if (context != null) {
@@ -326,10 +330,18 @@ public class CPUFreq {
     }
 
     public List<String> getGovernors() {
-        if (sGovernors == null) {
-            boolean offline = isOffline(0);
+        return getGovernors(getBigCpu());
+    }
+
+    public List<String> getGovernors(int cpu) {
+        if (mClusterGovernors.indexOfKey(cpu) < 0) {
+            int readCpu = cpu;
+            if (!Utils.existFile(Utils.strFormat(CPU_AVAILABLE_GOVERNORS, readCpu))) {
+                readCpu = 0;
+            }
+            boolean offline = isOffline(readCpu);
             if (offline) {
-                onlineCpu(0, true, false, null);
+                onlineCpu(readCpu, true, false, null);
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e) {
@@ -337,19 +349,22 @@ public class CPUFreq {
                 }
             }
 
-            if (Utils.existFile(Utils.strFormat(CPU_AVAILABLE_GOVERNORS, 0))) {
-                String value = Utils.readFile(Utils.strFormat(CPU_AVAILABLE_GOVERNORS, 0));
-                if (value != null) {
-                    sGovernors = value.split(" ");
+            if (Utils.existFile(Utils.strFormat(CPU_AVAILABLE_GOVERNORS, readCpu))) {
+                String value = Utils.readFile(Utils.strFormat(CPU_AVAILABLE_GOVERNORS, readCpu));
+                if (value != null && !value.trim().isEmpty()) {
+                    mClusterGovernors.put(cpu, value.trim().split("\\s+"));
                 }
             }
 
             if (offline) {
-                onlineCpu(0, false, false, null);
+                onlineCpu(readCpu, false, false, null);
             }
         }
-        if (sGovernors == null) return getGovernors();
-        return Arrays.asList(sGovernors);
+        String[] governors = mClusterGovernors.get(cpu);
+        if (governors == null) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(governors);
     }
 
     private int getFreq(int cpu, String path, boolean forceRead) {
@@ -575,6 +590,116 @@ public class CPUFreq {
                 category, Utils.strFormat(CPU_ONLINE, cpu), context);
         Control.runSetting(Control.chmod("444", Utils.strFormat(CPU_ONLINE, cpu)),
                 category, Utils.strFormat(CPU_ONLINE, cpu) + "chmod444", context);
+    }
+
+    public static class Cluster {
+        public final int index;
+        public final int firstCpu;
+        public final int lastCpu;
+        public final List<Integer> cpus;
+
+        public Cluster(int index, List<Integer> cpus) {
+            this.index = index;
+            List<Integer> sorted = new ArrayList<>(cpus);
+            Collections.sort(sorted);
+            this.cpus = Collections.unmodifiableList(sorted);
+            this.firstCpu = sorted.get(0);
+            this.lastCpu = sorted.get(sorted.size() - 1);
+        }
+
+        public String getCoresDisplay() {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < cpus.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(cpus.get(i) + 1);
+            }
+            return sb.toString();
+        }
+    }
+
+    public List<Cluster> getClusters() {
+        if (mClusters != null) {
+            return mClusters;
+        }
+        List<Cluster> clusters = new ArrayList<>();
+        int count = getCpuCount();
+        boolean[] assigned = new boolean[count];
+
+        for (int cpu = 0; cpu < count; cpu++) {
+            if (assigned[cpu]) continue;
+            List<Integer> group = readClusterCpus(cpu, count);
+            if (group != null && !group.isEmpty()) {
+                for (int c : group) {
+                    if (c >= 0 && c < count) {
+                        assigned[c] = true;
+                    }
+                }
+                clusters.add(new Cluster(clusters.size(), group));
+            }
+        }
+
+        if (clusters.isEmpty()) {
+            if (isBigLITTLE()) {
+                List<Integer> little = getLITTLECpuRange();
+                List<Integer> big = getBigCpuRange();
+                if (!little.isEmpty() && !big.isEmpty()) {
+                    if (little.get(0) < big.get(0)) {
+                        clusters.add(new Cluster(0, little));
+                        clusters.add(new Cluster(1, big));
+                    } else {
+                        clusters.add(new Cluster(0, big));
+                        clusters.add(new Cluster(1, little));
+                    }
+                }
+            }
+            if (clusters.isEmpty()) {
+                List<Integer> all = new ArrayList<>();
+                for (int i = 0; i < count; i++) {
+                    all.add(i);
+                }
+                if (!all.isEmpty()) {
+                    clusters.add(new Cluster(0, all));
+                }
+            }
+        } else {
+            List<Integer> leftover = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                if (!assigned[i]) leftover.add(i);
+            }
+            if (!leftover.isEmpty()) {
+                clusters.add(new Cluster(clusters.size(), leftover));
+            }
+        }
+
+        mClusters = Collections.unmodifiableList(clusters);
+        return mClusters;
+    }
+
+    private List<Integer> readClusterCpus(int cpu, int maxCpu) {
+        String[] paths = new String[]{
+                Utils.strFormat(CPU_RELATED_CPUS, cpu),
+                Utils.strFormat(POLICY_RELATED_CPUS, cpu),
+                Utils.strFormat(CPU_AFFECTED_CPUS, cpu)
+        };
+        for (String path : paths) {
+            if (Utils.existFile(path)) {
+                String content = Utils.readFile(path);
+                if (content != null && !content.trim().isEmpty()) {
+                    String[] parts = content.trim().split("\\s+");
+                    List<Integer> list = new ArrayList<>();
+                    for (String part : parts) {
+                        int c = Utils.strToInt(part);
+                        if (c >= 0 && c < maxCpu && !list.contains(c)) {
+                            list.add(c);
+                        }
+                    }
+                    if (!list.isEmpty()) {
+                        return list;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public List<Integer> getLITTLECpuRange() {

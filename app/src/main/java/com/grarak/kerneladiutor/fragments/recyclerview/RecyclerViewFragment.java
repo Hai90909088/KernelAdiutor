@@ -161,11 +161,10 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         mAppBarLayout = ((BaseActivity) getActivity()).getAppBarLayout();
         mToolBar = ((BaseActivity) getActivity()).getToolBar();
 
-        if (mAppBarLayout != null && !isForeground()) {
+        if (mAppBarLayout != null && !isForeground() && showViewPager() && !hideBanner()) {
             mAppBarLayout.postDelayed(() -> {
                 if (mAppBarLayout != null && isAdded() && getActivity() != null) {
-                    ViewCompat.setElevation(mAppBarLayout, showViewPager() && !hideBanner() ?
-                            0 : getResources().getDimension(R.dimen.app_bar_elevation));
+                    ViewCompat.setElevation(mAppBarLayout, 0);
                 }
             }, 150);
         }
@@ -292,7 +291,7 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             }
             fragment.hideProgress();
             fragment.postInit();
-            if (mSavedInstanceState == null) {
+            if (mSavedInstanceState == null && fragment.showViewPager() && !fragment.hideBanner()) {
                 fragment.mRecyclerView.post(new Runnable() {
                     @Override
                     public void run() {
@@ -302,28 +301,29 @@ public abstract class RecyclerViewFragment extends BaseFragment {
                                     activity, R.anim.slide_in_bottom));
 
                             int cx = fragment.mViewPager.getWidth();
+                            if (cx > 0) {
+                                SupportAnimator animator = ViewAnimationUtils.createCircularReveal(
+                                        fragment.mViewPager, cx / 2, 0, 0, cx);
+                                animator.addListener(new SupportAnimator.SimpleAnimatorListener() {
+                                    @Override
+                                    public void onAnimationStart() {
+                                        super.onAnimationStart();
+                                        fragment.mViewPager.setVisibility(View.VISIBLE);
+                                    }
 
-                            SupportAnimator animator = ViewAnimationUtils.createCircularReveal(
-                                    fragment.mViewPager, cx / 2, 0, 0, cx);
-                            animator.addListener(new SupportAnimator.SimpleAnimatorListener() {
-                                @Override
-                                public void onAnimationStart() {
-                                    super.onAnimationStart();
-                                    fragment.mViewPager.setVisibility(View.VISIBLE);
-                                }
-
-                                @Override
-                                public void onAnimationEnd() {
-                                    super.onAnimationEnd();
-                                    fragment.mViewPagerShadow.setVisibility(View.VISIBLE);
-                                }
-                            });
-                            animator.setDuration(400);
-                            animator.start();
+                                    @Override
+                                    public void onAnimationEnd() {
+                                        super.onAnimationEnd();
+                                        fragment.mViewPagerShadow.setVisibility(View.VISIBLE);
+                                    }
+                                });
+                                animator.setDuration(400);
+                                animator.start();
+                            }
                         }
                     }
                 });
-            } else {
+            } else if (fragment.showViewPager() && !fragment.hideBanner()) {
                 fragment.mViewPager.setVisibility(View.VISIBLE);
                 fragment.mViewPagerShadow.setVisibility(View.VISIBLE);
             }
@@ -382,13 +382,13 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             setAppBarLayoutAlpha(0);
             adjustScrollPosition();
         } else {
-            mRecyclerView.setPadding(mRecyclerView.getPaddingLeft(), isForeground() ? 0 : mToolBar.getHeight(),
+            mRecyclerView.setPadding(mRecyclerView.getPaddingLeft(), 0,
                     mRecyclerView.getPaddingRight(), mRecyclerView.getPaddingBottom());
             mRecyclerView.setClipToPadding(true);
             ViewGroup.LayoutParams layoutParams = mViewPagerParent.getLayoutParams();
             layoutParams.height = 0;
+            mViewPagerParent.setVisibility(View.GONE);
             mViewPagerParent.requestLayout();
-            setAppBarLayoutAlpha(255);
 
             if (hideBanner()) {
                 if (showTopFab()) {
@@ -958,10 +958,12 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         super.onDestroy();
         mItems.clear();
         mRecyclerViewAdapter = null;
-        setAppBarLayoutAlpha(255);
-        if (mAppBarLayout != null && !isForeground()) {
-            mAppBarLayout.setTranslationY(0);
-            ViewCompat.setElevation(mAppBarLayout, 0);
+        if (showViewPager() && !hideBanner()) {
+            setAppBarLayoutAlpha(255);
+            if (mAppBarLayout != null && !isForeground()) {
+                mAppBarLayout.setTranslationY(0);
+                ViewCompat.setElevation(mAppBarLayout, 0);
+            }
         }
         if (mLoader != null) {
             mLoader.cancel(true);

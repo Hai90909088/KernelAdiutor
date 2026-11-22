@@ -47,7 +47,7 @@ public class Themes {
     private static final Theme DARK_THEME = new Theme(R.style.Theme_Default_Pink_Dark);
 
     public static boolean isDarkTheme(Context context) {
-        return Prefs.getBoolean(DARK_THEME_PREF_KEY, false, context);
+        return Prefs.getBoolean(DARK_THEME_PREF_KEY, true, context);
     }
 
     public static Theme getTheme(Context context, boolean darktheme) {

@@ -97,4 +97,11 @@
     <string name="adreno_idler">Adreno Idler</string>
     <string name="internal_storage">Bộ nhớ trong</string>
     <string name="external_storage">Bộ nhớ ngoài</string>
+    <string name="cpu_min_short">Tối thiểu</string>
+    <string name="cpu_max_short">Tối đa</string>
+    <string name="governor_short">TĐ.</string>
+    <string name="cores_short">Lõi</string>
+    <string name="cluster_label">CPU %d</string>
+    <string name="boot_short">Khởi động</string>
+    <string name="cores_toggle_title">Lõi %s</string>
 </resources>

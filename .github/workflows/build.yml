@@ -1,4 +1,4 @@
-name: Build Debug APK
+name: Build Release APK
 
 on:
   workflow_dispatch:
@@ -24,12 +24,19 @@ jobs:
         with:
           gradle-version: '9.3.1'
 
-      - name: Build Debug APK
-        run: gradle assembleDebug
+      - name: Build Release APK
+        run: gradle assembleRelease
 
-      - name: Upload APK
+      - name: Sign Release APK
+        run: |
+          KEYSTORE="${{ runner.temp }}/release.keystore"
+          keytool -genkeypair -v -keystore "$KEYSTORE" -alias release -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=KernelAdiutor,O=Android,C=US"
+          SDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          APKSIGNER=$(find "$SDK_DIR/build-tools" -name "apksigner" | sort -V | tail -n 1)
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-pass pass:android --key-pass pass:android --out app/build/outputs/apk/release/KernelAdiutor-release.apk app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: KernelAdiutor-Debug
-          path: app/build/outputs/apk/debug/*.apk
-          
+          name: KernelAdiutor-Release
+          path: app/build/outputs/apk/release/KernelAdiutor-release.apk

@@ -31,27 +31,33 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.grarak.kerneladiutor.R;
+import com.grarak.kerneladiutor.fragments.ApplyOnBootFragment;
 import com.grarak.kerneladiutor.fragments.BaseFragment;
 import com.grarak.kerneladiutor.fragments.kernel.CPUFragment;
 import com.grarak.kerneladiutor.fragments.kernel.GPUFragment;
 import com.grarak.kerneladiutor.fragments.kernel.IOFragment;
-import com.grarak.kerneladiutor.fragments.recyclerview.RecyclerViewFragment;
 import com.grarak.kerneladiutor.utils.AppSettings;
-import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
 import com.grarak.kerneladiutor.utils.ViewUtils;
 import com.grarak.kerneladiutor.utils.kernel.gpu.GPU;
@@ -68,16 +74,20 @@ import java.util.PriorityQueue;
 public class NavigationActivity extends BaseActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private static final String TAG = NavigationActivity.class.getSimpleName();
-
     private static final String PACKAGE = NavigationActivity.class.getCanonicalName();
     public static final String INTENT_SECTION = PACKAGE + ".INTENT.SECTION";
 
     private ArrayList<NavigationFragment> mFragments = new ArrayList<>();
+    private final List<NavigationFragment> mTabs = new ArrayList<>();
     private Map<Integer, Class<? extends Fragment>> mActualFragments = new LinkedHashMap<>();
 
     private DrawerLayout mDrawer;
     private NavigationView mNavigationView;
+    private ViewPager mViewPager;
+    private TabLayout mTabLayout;
+    private MainPagerAdapter mPagerAdapter;
+    private View mApplyOnBootContainer;
+    private SwitchCompat mApplyOnBootSwitch;
     private long mLastTimeBackbuttonPressed;
 
     private int mSelection;
@@ -127,13 +137,13 @@ public class NavigationActivity extends BaseActivity
 
     private void initFragments() {
         mFragments.clear();
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.kernel));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.cpu, CPUFragment.class, R.drawable.ic_cpu));
+        mFragments.add(new NavigationFragment(R.string.kernel));
+        mFragments.add(new NavigationFragment(R.string.cpu, CPUFragment.class, R.drawable.ic_cpu));
         if (GPU.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.gpu, GPUFragment.class, R.drawable.ic_gpu));
+            mFragments.add(new NavigationFragment(R.string.gpu, GPUFragment.class, R.drawable.ic_gpu));
         }
         if (IO.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.io_scheduler, IOFragment.class, R.drawable.ic_sdcard));
+            mFragments.add(new NavigationFragment(R.string.io_scheduler, IOFragment.class, R.drawable.ic_sdcard));
         }
     }
 
@@ -164,6 +174,9 @@ public class NavigationActivity extends BaseActivity
         setContentView(R.layout.activity_navigation);
         Toolbar toolbar = getToolBar();
         setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(R.string.app_name);
+        }
 
         mDrawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawer, toolbar, 0, 0);
@@ -178,12 +191,41 @@ public class NavigationActivity extends BaseActivity
             }
         });
 
+        mTabLayout = findViewById(R.id.tab_layout);
+        mViewPager = findViewById(R.id.main_viewpager);
+        mApplyOnBootContainer = findViewById(R.id.apply_on_boot_container);
+        mApplyOnBootSwitch = findViewById(R.id.apply_on_boot_switch);
+
         if (savedInstanceState != null) {
             mSelection = savedInstanceState.getInt(INTENT_SECTION);
             mLicenseDialog = savedInstanceState.getBoolean("license");
         }
 
         appendFragments(false);
+
+        mPagerAdapter = new MainPagerAdapter(getSupportFragmentManager(), mTabs);
+        mViewPager.setAdapter(mPagerAdapter);
+        mViewPager.setOffscreenPageLimit(Math.max(1, mTabs.size()));
+        mTabLayout.setupWithViewPager(mViewPager);
+        mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                syncTabSelection(position, true);
+            }
+        });
+
+        mApplyOnBootContainer.setOnClickListener(v -> {
+            int pos = mViewPager.getCurrentItem();
+            if (pos >= 0 && pos < mTabs.size()) {
+                String category = ApplyOnBootFragment.getAssignment(mTabs.get(pos).mFragmentClass);
+                boolean next = !mApplyOnBootSwitch.isChecked();
+                mApplyOnBootSwitch.setChecked(next);
+                AppSettings.saveBoolean(category, next, NavigationActivity.this);
+                Utils.toast(getString(R.string.apply_on_boot) + ": "
+                        + getString(next ? R.string.enabled : R.string.disabled), NavigationActivity.this);
+            }
+        });
+
         String section = getIntent().getStringExtra(INTENT_SECTION);
         if (section != null) {
             for (Map.Entry<Integer, Class<? extends Fragment>> entry : mActualFragments.entrySet()) {
@@ -202,6 +244,24 @@ public class NavigationActivity extends BaseActivity
         onItemSelected(mSelection, false);
     }
 
+    private void syncTabSelection(int position, boolean saveOpened) {
+        if (position < 0 || position >= mTabs.size()) return;
+        NavigationFragment tab = mTabs.get(position);
+        mSelection = tab.mId;
+        mNavigationView.setCheckedItem(mSelection);
+
+        if (mApplyOnBootSwitch != null && tab.mFragmentClass != null) {
+            String category = ApplyOnBootFragment.getAssignment(tab.mFragmentClass);
+            mApplyOnBootSwitch.setChecked(AppSettings.getBoolean(category, false, this));
+        }
+
+        if (saveOpened && tab.mFragmentClass != null) {
+            AppSettings.saveFragmentOpened(tab.mFragmentClass,
+                    AppSettings.getFragmentOpened(tab.mFragmentClass, this) + 1, this);
+            setShortcuts();
+        }
+    }
+
     private int firstTab() {
         for (Map.Entry<Integer, Class<? extends Fragment>> entry : mActualFragments.entrySet()) {
             if (entry.getValue() != null) {
@@ -217,6 +277,7 @@ public class NavigationActivity extends BaseActivity
 
     private void appendFragments(boolean setShortcuts) {
         mActualFragments.clear();
+        mTabs.clear();
         Menu menu = mNavigationView.getMenu();
         menu.clear();
 
@@ -226,10 +287,7 @@ public class NavigationActivity extends BaseActivity
             int id = navigationFragment.mId;
 
             Drawable drawable = ContextCompat.getDrawable(this,
-                    Utils.DONATED
-                            && AppSettings.isSectionIcons(this)
-                            && navigationFragment.mDrawable != 0 ? navigationFragment.mDrawable :
-                            R.drawable.ic_blank);
+                    navigationFragment.mDrawable != 0 ? navigationFragment.mDrawable : R.drawable.ic_blank);
 
             if (fragmentClass == null) {
                 lastSubMenu = menu.addSubMenu(id);
@@ -243,7 +301,11 @@ public class NavigationActivity extends BaseActivity
                     mNavigationView.setCheckedItem(mSelection);
                 }
                 mActualFragments.put(id, fragmentClass);
+                mTabs.add(navigationFragment);
             }
+        }
+        if (mPagerAdapter != null) {
+            mPagerAdapter.notifyDataSetChanged();
         }
         if (setShortcuts) {
             setShortcuts();
@@ -279,6 +341,7 @@ public class NavigationActivity extends BaseActivity
 
         List<ShortcutInfo> shortcutInfos = new ArrayList<>();
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
+        if (shortcutManager == null) return;
         shortcutManager.removeAllDynamicShortcuts();
         for (int i = 0; i < 4; i++) {
             NavigationFragment fragment = findNavigationFragmentByClass(queue.poll());
@@ -314,7 +377,8 @@ public class NavigationActivity extends BaseActivity
         if (mDrawer != null && mDrawer.isDrawerOpen(GravityCompat.START)) {
             mDrawer.closeDrawer(GravityCompat.START);
         } else {
-            Fragment currentFragment = getFragment(mSelection);
+            Fragment currentFragment = (mPagerAdapter != null && mViewPager != null)
+                    ? mPagerAdapter.getRegisteredFragment(mViewPager.getCurrentItem()) : null;
             if (!(currentFragment instanceof BaseFragment)
                     || !((BaseFragment) currentFragment).onBackPressed()) {
                 long currentTime = SystemClock.elapsedRealtime();
@@ -331,15 +395,6 @@ public class NavigationActivity extends BaseActivity
     @Override
     public void finish() {
         super.finish();
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        for (int id : mActualFragments.keySet()) {
-            Fragment fragment = fragmentManager.findFragmentByTag(id + "_key");
-            if (fragment != null) {
-                fragmentTransaction.remove(fragment);
-            }
-        }
-        fragmentTransaction.commitAllowingStateLoss();
         RootUtils.closeSU();
     }
 
@@ -359,36 +414,64 @@ public class NavigationActivity extends BaseActivity
     }
 
     private void onItemSelected(final int res, boolean saveOpened) {
-        mDrawer.closeDrawer(GravityCompat.START);
-        getSupportActionBar().setTitle(getString(res));
-        mNavigationView.setCheckedItem(res);
-        mSelection = res;
-        final Fragment fragment = getFragment(res);
-
-        if (saveOpened) {
-            AppSettings.saveFragmentOpened(fragment.getClass(),
-                    AppSettings.getFragmentOpened(fragment.getClass(), this) + 1,
-                    this);
+        if (mDrawer != null && mDrawer.isDrawerOpen(GravityCompat.START)) {
+            mDrawer.closeDrawer(GravityCompat.START);
         }
-        setShortcuts();
-
-        mDrawer.postDelayed(()
-                        -> {
-                    Log.crashlyticsI(TAG, "open " + fragment.getClass().getSimpleName());
-                    getSupportFragmentManager().beginTransaction().replace(
-                            R.id.content_frame, fragment, res + "_key").commitAllowingStateLoss();
-                },
-                250);
+        for (int i = 0; i < mTabs.size(); i++) {
+            if (mTabs.get(i).mId == res) {
+                if (mViewPager != null) {
+                    mViewPager.setCurrentItem(i, saveOpened);
+                }
+                syncTabSelection(i, saveOpened);
+                break;
+            }
+        }
     }
 
-    private Fragment getFragment(int res) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentByTag(res + "_key");
-        if (fragment == null && mActualFragments.containsKey(res)) {
-            fragment = Fragment.instantiate(this,
-                    mActualFragments.get(res).getCanonicalName());
+    private class MainPagerAdapter extends FragmentPagerAdapter {
+
+        private final List<NavigationFragment> mItems;
+        private final SparseArray<Fragment> mRegistered = new SparseArray<>();
+
+        MainPagerAdapter(FragmentManager fm, List<NavigationFragment> items) {
+            super(fm);
+            mItems = items;
         }
-        return fragment;
+
+        @Override
+        public Fragment getItem(int position) {
+            return Fragment.instantiate(NavigationActivity.this,
+                    mItems.get(position).mFragmentClass.getCanonicalName());
+        }
+
+        @Override
+        public int getCount() {
+            return mItems.size();
+        }
+
+        @Nullable
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return getString(mItems.get(position).mId);
+        }
+
+        @NonNull
+        @Override
+        public Object instantiateItem(@NonNull ViewGroup container, int position) {
+            Fragment fragment = (Fragment) super.instantiateItem(container, position);
+            mRegistered.put(position, fragment);
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+            mRegistered.remove(position);
+            super.destroyItem(container, position, object);
+        }
+
+        Fragment getRegisteredFragment(int position) {
+            return mRegistered.get(position);
+        }
     }
 
     public static class NavigationFragment implements Parcelable {

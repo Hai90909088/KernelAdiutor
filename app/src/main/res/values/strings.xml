@@ -137,4 +137,11 @@
     <string name="add_random_summary">Draw entropy from spinning (rotational) storage.</string>
     <string name="rq_affitiny">RQ Affinity</string>
     <string name="rq_affinity_summary">Try to have scheduler requests complete on the CPU core they were made from. Higher values are more aggressive.</string>
+    <string name="cpu_min_short">Min</string>
+    <string name="cpu_max_short">Max</string>
+    <string name="governor_short">Gov.</string>
+    <string name="cores_short">Cores</string>
+    <string name="cluster_label">CPU %d</string>
+    <string name="boot_short">Boot</string>
+    <string name="cores_toggle_title">Cores %s</string>
 </resources>

@@ -76,13 +76,13 @@
         <android.support.v7.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="bottom"
-            android:layout_marginBottom="100dp"
-            android:layout_marginLeft="30dp"
-            android:layout_marginRight="30dp"
-            android:layout_marginTop="100dp"
-            app:cardBackgroundColor="?android:attr/colorBackground"
-            app:cardCornerRadius="5dp">
+            android:layout_gravity="center"
+            android:layout_marginBottom="32dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="32dp"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -94,7 +94,7 @@
                     android:id="@+id/foreground_text"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
-                    android:background="?attr/colorPrimaryDark"
+                    android:background="@color/toolbar_bg"
                     android:gravity="center_vertical"
                     android:maxLines="1"
                     android:paddingEnd="16dp"
@@ -125,13 +125,13 @@
         <android.support.v7.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="bottom"
-            android:layout_marginBottom="100dp"
-            android:layout_marginLeft="30dp"
-            android:layout_marginRight="30dp"
-            android:layout_marginTop="100dp"
-            app:cardBackgroundColor="?android:attr/colorBackground"
-            app:cardCornerRadius="5dp">
+            android:layout_gravity="center"
+            android:layout_marginBottom="32dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="32dp"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="12dp">
 
             <FrameLayout
                 android:id="@+id/dialog_content"

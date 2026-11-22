@@ -27,13 +27,12 @@ import com.grarak.kerneladiutor.utils.kernel.gpu.AdrenoIdler;
 import com.grarak.kerneladiutor.utils.kernel.gpu.GPUFreq;
 import com.grarak.kerneladiutor.utils.kernel.gpu.SimpleGPU;
 import com.grarak.kerneladiutor.views.recyclerview.CardView;
-import com.grarak.kerneladiutor.views.recyclerview.DescriptionView;
+import com.grarak.kerneladiutor.views.recyclerview.ClusterControlView;
+import com.grarak.kerneladiutor.views.recyclerview.CpuDashboardView;
 import com.grarak.kerneladiutor.views.recyclerview.RecyclerViewItem;
 import com.grarak.kerneladiutor.views.recyclerview.SeekBarView;
 import com.grarak.kerneladiutor.views.recyclerview.SelectView;
 import com.grarak.kerneladiutor.views.recyclerview.SwitchView;
-import com.grarak.kerneladiutor.views.recyclerview.TitleView;
-import com.grarak.kerneladiutor.views.recyclerview.XYGraphView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,10 +44,17 @@ public class GPUFragment extends RecyclerViewFragment {
 
     private GPUFreq mGPUFreq;
 
-    private XYGraphView m2dCurFreq;
-    private XYGraphView mCurFreq;
+    private CpuDashboardView mDashboard;
+    private ClusterControlView mGpuControl;
+    private int mGpuRowIndex = -1;
+    private int mGpu2dRowIndex = -1;
 
     private PathReaderFragment mGPUGovernorTunableFragment;
+
+    @Override
+    protected boolean showViewPager() {
+        return false;
+    }
 
     @Override
     protected BaseFragment getForegroundFragment() {
@@ -60,13 +66,11 @@ public class GPUFragment extends RecyclerViewFragment {
         super.init();
 
         mGPUFreq = GPUFreq.getInstance();
-        addViewPagerFragment(ApplyOnBootFragment.newInstance(this));
     }
 
     @Override
     protected void addItems(List<RecyclerViewItem> items) {
-        freqInit(items);
-        governorInit(items);
+        freqAndGovernorInit(items);
         if (SimpleGPU.supported()) {
             simpleGpuInit(items);
         }
@@ -75,109 +79,123 @@ public class GPUFragment extends RecyclerViewFragment {
         }
     }
 
-    private void freqInit(List<RecyclerViewItem> items) {
-        CardView freqCard = new CardView();
-        freqCard.setTitle(getString(R.string.frequencies));
+    private void freqAndGovernorInit(List<RecyclerViewItem> items) {
+        mGpuRowIndex = -1;
+        mGpu2dRowIndex = -1;
 
-        if (mGPUFreq.has2dCurFreq() && mGPUFreq.get2dAvailableFreqs() != null) {
-            m2dCurFreq = new XYGraphView();
-            m2dCurFreq.setTitle(getString(R.string.gpu_2d_freq));
-            freqCard.addItem(m2dCurFreq);
+        List<Integer> freqs = mGPUFreq.getAvailableFreqs();
+        List<Integer> freqs2d = mGPUFreq.get2dAvailableFreqs();
+
+        mDashboard = new CpuDashboardView();
+        mDashboard.setShowOverall(mGPUFreq.hasBusy());
+        List<CpuDashboardView.BarRow> rows = new ArrayList<>();
+        if (mGPUFreq.hasCurFreq() && freqs != null && !freqs.isEmpty()) {
+            mGpuRowIndex = rows.size();
+            int cur = mGPUFreq.getCurFreq();
+            int max = freqs.get(freqs.size() - 1);
+            int pct = max > 0 ? Math.round((float) cur / max * 100f) : 0;
+            rows.add(new CpuDashboardView.BarRow(getString(R.string.gpu), pct,
+                    ClusterControlView.formatFreqHz(cur, mGPUFreq.getCurFreqOffset())));
+        }
+        if (mGPUFreq.has2dCurFreq() && freqs2d != null && !freqs2d.isEmpty()) {
+            mGpu2dRowIndex = rows.size();
+            int cur = mGPUFreq.get2dCurFreq();
+            int max = freqs2d.get(freqs2d.size() - 1);
+            int pct = max > 0 ? Math.round((float) cur / max * 100f) : 0;
+            rows.add(new CpuDashboardView.BarRow("2D", pct,
+                    ClusterControlView.formatFreqHz(cur, 1000000)));
+        }
+        mDashboard.setRows(rows);
+        if (mGPUFreq.hasBusy() || !rows.isEmpty()) {
+            items.add(mDashboard);
         }
 
-        if (mGPUFreq.hasCurFreq() && mGPUFreq.getAvailableFreqs() != null) {
-            mCurFreq = new XYGraphView();
-            mCurFreq.setTitle(getString(R.string.gpu_freq));
-            freqCard.addItem(mCurFreq);
+        if (mGPUFreq.hasGovernor() || mGPUFreq.hasMaxFreq() || mGPUFreq.hasMinFreq()) {
+            mGpuControl = new ClusterControlView();
+            mGpuControl.setTitle(getString(R.string.gpu));
+            mGpuControl.setShowCores(false);
+
+            String currentGov = mGPUFreq.hasGovernor() ? mGPUFreq.getGovernor() : "";
+            boolean hasTunables = mGPUFreq.hasGovernor() && mGPUFreq.hasTunables(currentGov);
+            mGpuControl.setShowTunables(hasTunables);
+            mGpuControl.setOnTunablesClickListener(v -> {
+                String governor1 = mGPUFreq.getGovernor();
+                setForegroundText(governor1);
+                mGPUGovernorTunableFragment.setError(getString(R.string.tunables_error, governor1));
+                mGPUGovernorTunableFragment.setPath(mGPUFreq.getTunables(governor1), ApplyOnBootFragment.GPU);
+                showForeground();
+            });
+
+            if (mGPUFreq.hasGovernor()) {
+                mGpuControl.setGovernors(mGPUFreq.getAvailableGovernors());
+                mGpuControl.setCurrentGovernor(currentGov);
+                mGpuControl.setOnGovernorSelectedListener(governor ->
+                        mGPUFreq.setGovernor(governor, getActivity()));
+            }
+
+            if (freqs != null && !freqs.isEmpty()) {
+                int offset = mGPUFreq.hasMaxFreq() ? mGPUFreq.getMaxFreqOffset()
+                        : (mGPUFreq.hasMinFreq() ? mGPUFreq.getMinFreqOffset() : mGPUFreq.getCurFreqOffset());
+                List<String> freqLabels = new ArrayList<>();
+                for (int freq : freqs) {
+                    freqLabels.add(ClusterControlView.formatFreqHz(freq, offset));
+                }
+                mGpuControl.setFreqLabels(freqLabels);
+                mGpuControl.setHasMin(mGPUFreq.hasMinFreq());
+                mGpuControl.setHasMax(mGPUFreq.hasMaxFreq());
+                if (mGPUFreq.hasMinFreq()) {
+                    mGpuControl.setMinIndex(freqs.indexOf(mGPUFreq.getMinFreq()));
+                    mGpuControl.setOnMinFreqSelectedListener(idx ->
+                            mGPUFreq.setMinFreq(freqs.get(idx), getActivity()));
+                }
+                if (mGPUFreq.hasMaxFreq()) {
+                    mGpuControl.setMaxIndex(freqs.indexOf(mGPUFreq.getMaxFreq()));
+                    mGpuControl.setOnMaxFreqSelectedListener(idx ->
+                            mGPUFreq.setMaxFreq(freqs.get(idx), getActivity()));
+                }
+            } else {
+                mGpuControl.setHasMin(false);
+                mGpuControl.setHasMax(false);
+            }
+
+            items.add(mGpuControl);
         }
 
-        if (mGPUFreq.has2dMaxFreq() && mGPUFreq.get2dAvailableFreqs() != null) {
-            SelectView max2dFreq = new SelectView();
-            max2dFreq.setTitle(getString(R.string.gpu_2d_max_freq));
-            max2dFreq.setSummary(getString(R.string.gpu_2d_max_freq_summary));
-            max2dFreq.setItems(mGPUFreq.get2dAdjustedFreqs(getActivity()));
-            max2dFreq.setItem((mGPUFreq.get2dMaxFreq() / 1000000) + getString(R.string.mhz));
-            max2dFreq.setOnItemSelected((selectView, position, item)
-                    -> mGPUFreq.set2dMaxFreq(mGPUFreq.get2dAvailableFreqs().get(position), getActivity()));
+        if ((mGPUFreq.has2dMaxFreq() && freqs2d != null) || mGPUFreq.has2dGovernor()) {
+            CardView gpu2dCard = new CardView();
+            gpu2dCard.setTitle(getString(R.string.gpu_2d_freq));
 
-            freqCard.addItem(max2dFreq);
-        }
+            if (mGPUFreq.has2dMaxFreq() && freqs2d != null) {
+                SelectView max2dFreq = new SelectView();
+                max2dFreq.setTitle(getString(R.string.gpu_2d_max_freq));
+                max2dFreq.setSummary(getString(R.string.gpu_2d_max_freq_summary));
+                max2dFreq.setItems(mGPUFreq.get2dAdjustedFreqs(getActivity()));
+                max2dFreq.setItem((mGPUFreq.get2dMaxFreq() / 1000000) + getString(R.string.mhz));
+                max2dFreq.setOnItemSelected((selectView, position, item)
+                        -> mGPUFreq.set2dMaxFreq(freqs2d.get(position), getActivity()));
+                gpu2dCard.addItem(max2dFreq);
+            }
 
-        if (mGPUFreq.hasMaxFreq() && mGPUFreq.getAvailableFreqs() != null) {
-            SelectView maxFreq = new SelectView();
-            maxFreq.setTitle(getString(R.string.gpu_max_freq));
-            maxFreq.setSummary(getString(R.string.gpu_max_freq_summary));
-            maxFreq.setItems(mGPUFreq.getAdjustedFreqs(getActivity()));
-            maxFreq.setItem((mGPUFreq.getMaxFreq() / mGPUFreq.getMaxFreqOffset()) + getString(R.string.mhz));
-            maxFreq.setOnItemSelected((selectView, position, item)
-                    -> mGPUFreq.setMaxFreq(mGPUFreq.getAvailableFreqs().get(position), getActivity()));
+            if (mGPUFreq.has2dGovernor()) {
+                SelectView governor2d = new SelectView();
+                governor2d.setTitle(getString(R.string.gpu_2d_governor));
+                governor2d.setSummary(getString(R.string.gpu_2d_governor_summary));
+                governor2d.setItems(mGPUFreq.get2dAvailableGovernors());
+                governor2d.setItem(mGPUFreq.get2dGovernor());
+                governor2d.setOnItemSelected((selectView, position, item)
+                        -> mGPUFreq.set2dGovernor(item, getActivity()));
+                gpu2dCard.addItem(governor2d);
+            }
 
-            freqCard.addItem(maxFreq);
-        }
-
-        if (mGPUFreq.hasMinFreq() && mGPUFreq.getAvailableFreqs() != null) {
-            SelectView minFreq = new SelectView();
-            minFreq.setTitle(getString(R.string.gpu_min_freq));
-            minFreq.setSummary(getString(R.string.gpu_min_freq_summary));
-            minFreq.setItems(mGPUFreq.getAdjustedFreqs(getActivity()));
-            minFreq.setItem((mGPUFreq.getMinFreq() / mGPUFreq.getMinFreqOffset()) + getString(R.string.mhz));
-            minFreq.setOnItemSelected((selectView, position, item)
-                    -> mGPUFreq.setMinFreq(mGPUFreq.getAvailableFreqs().get(position), getActivity()));
-
-            freqCard.addItem(minFreq);
-        }
-
-        if (freqCard.size() > 0) {
-            items.add(freqCard);
-        }
-    }
-
-    private void governorInit(List<RecyclerViewItem> items) {
-        if (mGPUFreq.has2dGovernor()) {
-            SelectView governor2d = new SelectView();
-            governor2d.setTitle(getString(R.string.gpu_2d_governor));
-            governor2d.setSummary(getString(R.string.gpu_2d_governor_summary));
-            governor2d.setItems(mGPUFreq.get2dAvailableGovernors());
-            governor2d.setItem(mGPUFreq.get2dGovernor());
-            governor2d.setOnItemSelected((selectView, position, item)
-                    -> mGPUFreq.set2dGovernor(item, getActivity()));
-
-            items.add(governor2d);
-        }
-
-        if (mGPUFreq.hasGovernor()) {
-            SelectView governor = new SelectView();
-            governor.setTitle(getString(R.string.gpu_governor));
-            governor.setSummary(getString(R.string.gpu_governor_summary));
-            governor.setItems(mGPUFreq.getAvailableGovernors());
-            governor.setItem(mGPUFreq.getGovernor());
-            governor.setOnItemSelected((selectView, position, item)
-                    -> mGPUFreq.setGovernor(item, getActivity()));
-
-            items.add(governor);
-
-            if (mGPUFreq.hasTunables(governor.getValue())) {
-                DescriptionView tunables = new DescriptionView();
-                tunables.setTitle(getString(R.string.gpu_governor_tunables));
-                tunables.setSummary(getString(R.string.governor_tunables_summary));
-                tunables.setOnItemClickListener(item -> {
-                    String governor1 = mGPUFreq.getGovernor();
-                    setForegroundText(governor1);
-                    mGPUGovernorTunableFragment.setError(getString(R.string.tunables_error, governor1));
-                    mGPUGovernorTunableFragment.setPath(mGPUFreq.getTunables(mGPUFreq.getGovernor()),
-                            ApplyOnBootFragment.GPU);
-                    showForeground();
-                });
-
-                items.add(tunables);
+            if (gpu2dCard.size() > 0) {
+                items.add(gpu2dCard);
             }
         }
     }
 
     private void simpleGpuInit(List<RecyclerViewItem> items) {
-        List<RecyclerViewItem> simpleGpu = new ArrayList<>();
-        TitleView title = new TitleView();
-        title.setText(getString(R.string.simple_gpu_algorithm));
+        CardView card = new CardView();
+        card.setTitle(getString(R.string.simple_gpu_algorithm));
 
         if (SimpleGPU.hasSimpleGpuEnable()) {
             SwitchView enable = new SwitchView();
@@ -187,7 +205,7 @@ public class GPUFragment extends RecyclerViewFragment {
             enable.addOnSwitchListener((switchView, isChecked)
                     -> SimpleGPU.enableSimpleGpu(isChecked, getActivity()));
 
-            simpleGpu.add(enable);
+            card.addItem(enable);
         }
 
         if (SimpleGPU.hasSimpleGpuLaziness()) {
@@ -207,7 +225,7 @@ public class GPUFragment extends RecyclerViewFragment {
                 }
             });
 
-            simpleGpu.add(laziness);
+            card.addItem(laziness);
         }
 
         if (SimpleGPU.hasSimpleGpuRampThreshold()) {
@@ -227,19 +245,17 @@ public class GPUFragment extends RecyclerViewFragment {
                 }
             });
 
-            simpleGpu.add(rampThreshold);
+            card.addItem(rampThreshold);
         }
 
-        if (simpleGpu.size() > 0) {
-            items.add(title);
-            items.addAll(simpleGpu);
+        if (card.size() > 0) {
+            items.add(card);
         }
     }
 
     private void adrenoIdlerInit(List<RecyclerViewItem> items) {
-        List<RecyclerViewItem> adrenoIdler = new ArrayList<>();
-        TitleView title = new TitleView();
-        title.setText(getString(R.string.adreno_idler));
+        CardView card = new CardView();
+        card.setTitle(getString(R.string.adreno_idler));
 
         if (AdrenoIdler.hasAdrenoIdlerEnable()) {
             SwitchView enable = new SwitchView();
@@ -249,7 +265,7 @@ public class GPUFragment extends RecyclerViewFragment {
             enable.addOnSwitchListener((switchView, isChecked)
                     -> AdrenoIdler.enableAdrenoIdler(isChecked, getActivity()));
 
-            adrenoIdler.add(enable);
+            card.addItem(enable);
         }
 
         if (AdrenoIdler.hasAdrenoIdlerDownDiff()) {
@@ -269,7 +285,7 @@ public class GPUFragment extends RecyclerViewFragment {
                 }
             });
 
-            adrenoIdler.add(downDiff);
+            card.addItem(downDiff);
         }
 
         if (AdrenoIdler.hasAdrenoIdlerIdleWait()) {
@@ -289,7 +305,7 @@ public class GPUFragment extends RecyclerViewFragment {
                 }
             });
 
-            adrenoIdler.add(idleWait);
+            card.addItem(idleWait);
         }
 
         if (AdrenoIdler.hasAdrenoIdlerIdleWorkload()) {
@@ -310,12 +326,11 @@ public class GPUFragment extends RecyclerViewFragment {
                 }
             });
 
-            adrenoIdler.add(idleWorkload);
+            card.addItem(idleWorkload);
         }
 
-        if (adrenoIdler.size() > 0) {
-            items.add(title);
-            items.addAll(adrenoIdler);
+        if (card.size() > 0) {
+            items.add(card);
         }
     }
 
@@ -346,28 +361,23 @@ public class GPUFragment extends RecyclerViewFragment {
     protected void refresh() {
         super.refresh();
 
-        if (m2dCurFreq != null && m2dFreq != null && m2dFreqs != null) {
-            float maxFreq = m2dFreqs.get(m2dFreqs.size() - 1);
-            m2dCurFreq.setText((m2dFreq / 1000000) + getString(R.string.mhz));
-            float per = (float) m2dFreq / maxFreq * 100f;
-            m2dCurFreq.addPercentage(Math.round(per > 100 ? 100 : per < 0 ? 0 : per));
-        }
-
-        if (mCurFreq != null && mFreq != null && mFreqs != null) {
-            int load = -1;
-            String text = "";
+        if (mDashboard != null) {
             if (mBusy != null) {
-                load = mBusy;
-                load = load > 100 ? 100 : load < 0 ? 0 : load;
-                text += load + "% - ";
+                int load = Math.max(0, Math.min(100, mBusy));
+                mDashboard.setOverallUsage(load);
             }
-
-            int freq = mFreq;
-            float maxFreq = mFreqs.get(mFreqs.size() - 1);
-            text += freq / mGPUFreq.getCurFreqOffset() + getString(R.string.mhz);
-            mCurFreq.setText(text);
-            float per = (float) freq / maxFreq * 100f;
-            mCurFreq.addPercentage(load >= 0 ? load : Math.round(per > 100 ? 100 : per < 0 ? 0 : per));
+            if (mGpuRowIndex >= 0 && mFreq != null && mFreqs != null && !mFreqs.isEmpty()) {
+                float maxFreq = mFreqs.get(mFreqs.size() - 1);
+                int pct = maxFreq > 0 ? Math.round((float) mFreq / maxFreq * 100f) : 0;
+                mDashboard.updateRow(mGpuRowIndex, pct,
+                        ClusterControlView.formatFreqHz(mFreq, mGPUFreq.getCurFreqOffset()));
+            }
+            if (mGpu2dRowIndex >= 0 && m2dFreq != null && m2dFreqs != null && !m2dFreqs.isEmpty()) {
+                float maxFreq = m2dFreqs.get(m2dFreqs.size() - 1);
+                int pct = maxFreq > 0 ? Math.round((float) m2dFreq / maxFreq * 100f) : 0;
+                mDashboard.updateRow(mGpu2dRowIndex, pct,
+                        ClusterControlView.formatFreqHz(m2dFreq, 1000000));
+            }
         }
     }
 }

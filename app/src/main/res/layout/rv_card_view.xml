@@ -5,6 +5,7 @@
     android:layout_height="wrap_content"
     android:focusable="false"
     android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/card_bg"
     app:cardCornerRadius="@dimen/cardview_radius"
     app:cardElevation="@dimen/cardview_elevation"
     app:cardUseCompatPadding="true">
@@ -12,6 +13,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_dark_card"
         android:orientation="vertical">
 
         <FrameLayout

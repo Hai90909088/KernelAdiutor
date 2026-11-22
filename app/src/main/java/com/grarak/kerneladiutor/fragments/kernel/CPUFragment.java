@@ -19,14 +19,10 @@
  */
 package com.grarak.kerneladiutor.fragments.kernel;
 
-import android.util.SparseArray;
-
 import com.grarak.kerneladiutor.R;
 import com.grarak.kerneladiutor.fragments.ApplyOnBootFragment;
 import com.grarak.kerneladiutor.fragments.BaseFragment;
-import com.grarak.kerneladiutor.fragments.DescriptionFragment;
 import com.grarak.kerneladiutor.fragments.recyclerview.RecyclerViewFragment;
-import com.grarak.kerneladiutor.utils.Device;
 import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
 import com.grarak.kerneladiutor.utils.ViewUtils;
@@ -35,13 +31,14 @@ import com.grarak.kerneladiutor.utils.kernel.cpu.CPUFreq;
 import com.grarak.kerneladiutor.utils.kernel.cpu.Misc;
 import com.grarak.kerneladiutor.views.dialog.Dialog;
 import com.grarak.kerneladiutor.views.recyclerview.CardView;
+import com.grarak.kerneladiutor.views.recyclerview.ClusterControlView;
+import com.grarak.kerneladiutor.views.recyclerview.CpuDashboardView;
 import com.grarak.kerneladiutor.views.recyclerview.DescriptionView;
 import com.grarak.kerneladiutor.views.recyclerview.RecyclerViewItem;
 import com.grarak.kerneladiutor.views.recyclerview.SeekBarView;
 import com.grarak.kerneladiutor.views.recyclerview.SelectView;
 import com.grarak.kerneladiutor.views.recyclerview.SwitchView;
 import com.grarak.kerneladiutor.views.recyclerview.TitleView;
-import com.grarak.kerneladiutor.views.recyclerview.XYGraphView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,23 +54,38 @@ public class CPUFragment extends RecyclerViewFragment {
     private CPUFreq mCPUFreq;
     private CPUBoost mCPUBoost;
 
-    private XYGraphView mCPUUsageBig;
-    private SelectView mCPUMaxBig;
-    private SelectView mCPUMinBig;
-    private SelectView mCPUMaxScreenOffBig;
-    private SelectView mCPUGovernorBig;
-
-    private XYGraphView mCPUUsageLITTLE;
-    private SelectView mCPUMaxLITTLE;
-    private SelectView mCPUMinLITTLE;
-    private SelectView mCPUMaxScreenOffLITTLE;
-    private SelectView mCPUGovernorLITTLE;
-
-    private SparseArray<SwitchView> mCoresBig = new SparseArray<>();
-    private SparseArray<SwitchView> mCoresLITTLE = new SparseArray<>();
+    private CpuDashboardView mDashboard;
+    private final List<ClusterHolder> mClusterHolders = new ArrayList<>();
+    private final List<SelectView> mScreenOffSelects = new ArrayList<>();
+    private final List<CPUFreq.Cluster> mScreenOffClusters = new ArrayList<>();
 
     private PathReaderFragment mGovernorTunableFragment;
     private Dialog mGovernorTunableErrorDialog;
+    private Dialog mCoresDialog;
+
+    private float[] mCPUUsages;
+
+    private static class ClusterHolder {
+        final CPUFreq.Cluster cluster;
+        final ClusterControlView control;
+        final List<Integer> freqs;
+        int curFreq;
+        int minFreq;
+        int maxFreq;
+        String governor;
+        int screenOffFreq;
+
+        ClusterHolder(CPUFreq.Cluster cluster, ClusterControlView control, List<Integer> freqs) {
+            this.cluster = cluster;
+            this.control = control;
+            this.freqs = freqs;
+        }
+    }
+
+    @Override
+    protected boolean showViewPager() {
+        return false;
+    }
 
     @Override
     protected BaseFragment getForegroundFragment() {
@@ -86,12 +98,12 @@ public class CPUFragment extends RecyclerViewFragment {
 
         mCPUFreq = CPUFreq.getInstance(getActivity());
         mCPUBoost = CPUBoost.getInstance();
-        addViewPagerFragment(ApplyOnBootFragment.newInstance(this));
-        addViewPagerFragment(DescriptionFragment.newInstance(getString(mCPUFreq.getCpuCount() > 1 ?
-                R.string.cores : R.string.cores_singular, mCPUFreq.getCpuCount()), Device.getBoard()));
 
         if (mGovernorTunableErrorDialog != null) {
             mGovernorTunableErrorDialog.show();
+        }
+        if (mCoresDialog != null) {
+            mCoresDialog.show();
         }
     }
 
@@ -100,191 +112,159 @@ public class CPUFragment extends RecyclerViewFragment {
         Log.crashlyticsI(TAG, "freqInit");
         freqInit(items);
         if (Misc.hasMcPowerSaving()) {
-            Log.crashlyticsI(TAG, "mcPowerSavingInit");
             mcPowerSavingInit(items);
         }
         if (Misc.hasPowerSavingWq()) {
-            Log.crashlyticsI(TAG, "powerSavingWqInit");
             powerSavingWqInit(items);
         }
         if (Misc.hasCFSScheduler()) {
-            Log.crashlyticsI(TAG, "cfsSchedulerInit");
             cfsSchedulerInit(items);
         }
         if (Misc.hasCpuQuiet()) {
-            Log.crashlyticsI(TAG, "cpuQuietInit");
             cpuQuietInit(items);
         }
         if (mCPUBoost.supported()) {
-            Log.crashlyticsI(TAG, "cpuBoostInit");
             cpuBoostInit(items);
         }
         if (Misc.hasCpuTouchBoost()) {
-            Log.crashlyticsI(TAG, "cpuTouchBoostInit");
             cpuTouchBoostInit(items);
         }
     }
 
     private void freqInit(List<RecyclerViewItem> items) {
-        mCPUUsageBig = new XYGraphView();
-        if (mCPUFreq.isBigLITTLE()) {
-            mCPUUsageBig.setTitle(getString(R.string.cpu_usage_string, getString(R.string.cluster_big)));
-        } else {
-            mCPUUsageBig.setTitle(getString(R.string.cpu_usage));
+        mClusterHolders.clear();
+        mScreenOffSelects.clear();
+        mScreenOffClusters.clear();
+
+        List<CPUFreq.Cluster> clusters = mCPUFreq.getClusters();
+
+        mDashboard = new CpuDashboardView();
+        mDashboard.setShowOverall(true);
+        List<CpuDashboardView.BarRow> barRows = new ArrayList<>();
+        for (CPUFreq.Cluster cluster : clusters) {
+            String label = getString(R.string.cluster_label, cluster.index + 1);
+            int curFreq = readClusterCurFreq(cluster);
+            List<Integer> freqs = mCPUFreq.getFreqs(cluster.firstCpu);
+            int maxFreq = (freqs != null && !freqs.isEmpty()) ? freqs.get(freqs.size() - 1) : 0;
+            int pct = (curFreq > 0 && maxFreq > 0) ? Math.round((float) curFreq / maxFreq * 100f) : 0;
+            String val = curFreq > 0 ? ClusterControlView.formatFreqKhz(curFreq) : getString(R.string.offline);
+            barRows.add(new CpuDashboardView.BarRow(label, pct, val));
         }
+        mDashboard.setRows(barRows);
+        items.add(mDashboard);
 
-        items.add(mCPUUsageBig);
+        CardView screenOffCard = new CardView();
+        screenOffCard.setTitle(getString(R.string.cpu_max_screen_off_freq));
 
-        CardView bigCoresCard = new CardView();
-        if (mCPUFreq.isBigLITTLE()) {
-            bigCoresCard.setTitle(getString(R.string.cores_string, getString(R.string.cluster_big)));
-        }
-
-        final List<Integer> bigCores = mCPUFreq.getBigCpuRange();
-
-        mCoresBig.clear();
-        for (final int core : bigCores) {
-            SwitchView coreSwitch = new SwitchView();
-            coreSwitch.setSummary(getString(R.string.core, core + 1));
-
-            mCoresBig.put(core, coreSwitch);
-            bigCoresCard.addItem(coreSwitch);
-        }
-
-        CardView bigFrequenciesCard = new CardView();
-        if (mCPUFreq.isBigLITTLE()) {
-            bigFrequenciesCard.setTitle(getString(R.string.frequencies_string, getString(R.string.cluster_big)));
-        }
-
-        mCPUMaxBig = new SelectView();
-        mCPUMaxBig.setTitle(getString(R.string.cpu_max_freq));
-        mCPUMaxBig.setSummary(getString(R.string.cpu_max_freq_summary));
-        mCPUMaxBig.setItems(mCPUFreq.getAdjustedFreq(getActivity()));
-        mCPUMaxBig.setOnItemSelected((selectView, position, item)
-                -> mCPUFreq.setMaxFreq(mCPUFreq.getFreqs().get(position), bigCores.get(0),
-                bigCores.get(bigCores.size() - 1), getActivity()));
-        bigFrequenciesCard.addItem(mCPUMaxBig);
-
-        mCPUMinBig = new SelectView();
-        mCPUMinBig.setTitle(getString(R.string.cpu_min_freq));
-        mCPUMinBig.setSummary(getString(R.string.cpu_min_freq_summary));
-        mCPUMinBig.setItems(mCPUFreq.getAdjustedFreq(getActivity()));
-        mCPUMinBig.setOnItemSelected((selectView, position, item)
-                -> mCPUFreq.setMinFreq(mCPUFreq.getFreqs().get(position), bigCores.get(0),
-                bigCores.get(bigCores.size() - 1), getActivity()));
-        bigFrequenciesCard.addItem(mCPUMinBig);
-
-        if (mCPUFreq.hasMaxScreenOffFreq()) {
-            mCPUMaxScreenOffBig = new SelectView();
-            mCPUMaxScreenOffBig.setTitle(getString(R.string.cpu_max_screen_off_freq));
-            mCPUMaxScreenOffBig.setSummary(getString(R.string.cpu_max_screen_off_freq_summary));
-            mCPUMaxScreenOffBig.setItems(mCPUFreq.getAdjustedFreq(getActivity()));
-            mCPUMaxScreenOffBig.setOnItemSelected((selectView, position, item)
-                    -> mCPUFreq.setMaxScreenOffFreq(mCPUFreq.getFreqs().get(position), bigCores.get(0),
-                    bigCores.get(bigCores.size() - 1), getActivity()));
-            bigFrequenciesCard.addItem(mCPUMaxScreenOffBig);
-        }
-
-        CardView bigGovernorsCard = new CardView();
-        if (mCPUFreq.isBigLITTLE()) {
-            bigGovernorsCard.setTitle(getString(R.string.governors_string, getString(R.string.cluster_big)));
-        }
-
-        mCPUGovernorBig = new SelectView();
-        mCPUGovernorBig.setTitle(getString(R.string.cpu_governor));
-        mCPUGovernorBig.setSummary(getString(R.string.cpu_governor_summary));
-        mCPUGovernorBig.setItems(mCPUFreq.getGovernors());
-        mCPUGovernorBig.setOnItemSelected((selectView, position, item)
-                -> mCPUFreq.setGovernor(item, bigCores.get(0), bigCores.get(bigCores.size() - 1),
-                getActivity()));
-        bigGovernorsCard.addItem(mCPUGovernorBig);
-
-        DescriptionView governorTunablesBig = new DescriptionView();
-        governorTunablesBig.setTitle(getString(R.string.cpu_governor_tunables));
-        governorTunablesBig.setSummary(getString(R.string.governor_tunables_summary));
-        governorTunablesBig.setOnItemClickListener(item
-                -> showGovernorTunables(bigCores.get(0), bigCores.get(bigCores.size() - 1)));
-        bigGovernorsCard.addItem(governorTunablesBig);
-
-        items.add(bigCoresCard);
-        items.add(bigFrequenciesCard);
-        items.add(bigGovernorsCard);
-
-        if (mCPUFreq.isBigLITTLE()) {
-            mCPUUsageLITTLE = new XYGraphView();
-            mCPUUsageLITTLE.setTitle(getString(R.string.cpu_usage_string, getString(R.string.cluster_little)));
-
-            items.add(mCPUUsageLITTLE);
-
-            CardView LITTLECoresCard = new CardView();
-            LITTLECoresCard.setTitle(getString(R.string.cores_string, getString(R.string.cluster_little)));
-
-            final List<Integer> LITTLECores = mCPUFreq.getLITTLECpuRange();
-
-            mCoresLITTLE.clear();
-            for (final int core : LITTLECores) {
-                SwitchView coreSwitch = new SwitchView();
-                coreSwitch.setSummary(getString(R.string.core, core + 1));
-
-                mCoresLITTLE.put(core, coreSwitch);
-                LITTLECoresCard.addItem(coreSwitch);
+        for (final CPUFreq.Cluster cluster : clusters) {
+            final List<Integer> freqs = mCPUFreq.getFreqs(cluster.firstCpu);
+            List<String> freqLabels = new ArrayList<>();
+            if (freqs != null) {
+                for (int freq : freqs) {
+                    freqLabels.add(ClusterControlView.formatFreqKhz(freq));
+                }
             }
 
-            CardView LITTLEFrequenciesCard = new CardView();
-            LITTLEFrequenciesCard.setTitle(getString(R.string.frequencies_string, getString(R.string.cluster_little)));
+            ClusterControlView control = new ClusterControlView();
+            control.setTitle(getString(R.string.cluster_label, cluster.index + 1));
+            control.setShowTunables(true);
+            control.setOnTunablesClickListener(v -> showGovernorTunables(cluster.firstCpu, cluster.lastCpu));
+            control.setShowCores(true);
+            control.setCoresText(cluster.getCoresDisplay());
+            control.setOnCoresClickListener(v -> showCoresDialog(cluster));
 
-            mCPUMaxLITTLE = new SelectView();
-            mCPUMaxLITTLE.setTitle(getString(R.string.cpu_max_freq));
-            mCPUMaxLITTLE.setSummary(getString(R.string.cpu_max_freq_summary));
-            mCPUMaxLITTLE.setItems(mCPUFreq.getAdjustedFreq(mCPUFreq.getLITTLECpu(), getActivity()));
-            mCPUMaxLITTLE.setOnItemSelected((selectView, position, item)
-                    -> mCPUFreq.setMaxFreq(mCPUFreq.getFreqs(mCPUFreq.getLITTLECpu()).get(position),
-                    LITTLECores.get(0), LITTLECores.get(LITTLECores.size() - 1), getActivity()));
-            LITTLEFrequenciesCard.addItem(mCPUMaxLITTLE);
+            List<String> govs = mCPUFreq.getGovernors(cluster.firstCpu);
+            control.setGovernors(govs);
+            String curGov = mCPUFreq.getGovernor(cluster.firstCpu, false);
+            control.setCurrentGovernor(curGov);
+            control.setOnGovernorSelectedListener(governor ->
+                    mCPUFreq.setGovernor(governor, cluster.firstCpu, cluster.lastCpu, getActivity()));
 
-            mCPUMinLITTLE = new SelectView();
-            mCPUMinLITTLE.setTitle(getString(R.string.cpu_min_freq));
-            mCPUMinLITTLE.setSummary(getString(R.string.cpu_min_freq_summary));
-            mCPUMinLITTLE.setItems(mCPUFreq.getAdjustedFreq(mCPUFreq.getLITTLECpu(), getActivity()));
-            mCPUMinLITTLE.setOnItemSelected((selectView, position, item)
-                    -> mCPUFreq.setMinFreq(mCPUFreq.getFreqs(mCPUFreq.getLITTLECpu()).get(position),
-                    LITTLECores.get(0), LITTLECores.get(LITTLECores.size() - 1), getActivity()));
-            LITTLEFrequenciesCard.addItem(mCPUMinLITTLE);
-
-            if (mCPUFreq.hasMaxScreenOffFreq(mCPUFreq.getLITTLECpu())) {
-                mCPUMaxScreenOffLITTLE = new SelectView();
-                mCPUMaxScreenOffLITTLE.setTitle(getString(R.string.cpu_max_screen_off_freq));
-                mCPUMaxScreenOffLITTLE.setSummary(getString(R.string.cpu_max_screen_off_freq_summary));
-                mCPUMaxScreenOffLITTLE.setItems(mCPUFreq.getAdjustedFreq(mCPUFreq.getLITTLECpu(), getActivity()));
-                mCPUMaxScreenOffLITTLE.setOnItemSelected((selectView, position, item)
-                        -> mCPUFreq.setMaxScreenOffFreq(mCPUFreq.getFreqs(mCPUFreq.getLITTLECpu()).get(position),
-                        LITTLECores.get(0), LITTLECores.get(LITTLECores.size() - 1), getActivity()));
-                LITTLEFrequenciesCard.addItem(mCPUMaxScreenOffLITTLE);
+            control.setFreqLabels(freqLabels);
+            boolean hasFreqs = freqs != null && !freqs.isEmpty();
+            control.setHasMin(hasFreqs);
+            control.setHasMax(hasFreqs);
+            if (hasFreqs) {
+                int minF = mCPUFreq.getMinFreq(cluster.firstCpu, false);
+                int maxF = mCPUFreq.getMaxFreq(cluster.firstCpu, false);
+                control.setMinIndex(findClosestFreqIndex(freqs, minF));
+                control.setMaxIndex(findClosestFreqIndex(freqs, maxF));
+                control.setOnMinFreqSelectedListener(position ->
+                        mCPUFreq.setMinFreq(freqs.get(position), cluster.firstCpu, cluster.lastCpu, getActivity()));
+                control.setOnMaxFreqSelectedListener(position ->
+                        mCPUFreq.setMaxFreq(freqs.get(position), cluster.firstCpu, cluster.lastCpu, getActivity()));
             }
 
-            CardView LITTLEGovernorsCard = new CardView();
-            LITTLEGovernorsCard.setTitle(getString(R.string.governors_string, getString(R.string.cluster_little)));
+            ClusterHolder holder = new ClusterHolder(cluster, control, freqs);
+            holder.governor = curGov;
+            mClusterHolders.add(holder);
+            items.add(control);
 
-            mCPUGovernorLITTLE = new SelectView();
-            mCPUGovernorLITTLE.setTitle(getString(R.string.cpu_governor));
-            mCPUGovernorLITTLE.setSummary(getString(R.string.cpu_governor_summary));
-            mCPUGovernorLITTLE.setItems(mCPUFreq.getGovernors());
-            mCPUGovernorLITTLE.setOnItemSelected((selectView, position, item)
-                    -> mCPUFreq.setGovernor(item, LITTLECores.get(0), LITTLECores.get(LITTLECores.size() - 1),
-                    getActivity()));
-            LITTLEGovernorsCard.addItem(mCPUGovernorLITTLE);
-
-            DescriptionView governorTunablesLITTLE = new DescriptionView();
-            governorTunablesLITTLE.setTitle(getString(R.string.cpu_governor_tunables));
-            governorTunablesLITTLE.setSummary(getString(R.string.governor_tunables_summary));
-            governorTunablesLITTLE.setOnItemClickListener(item
-                    -> showGovernorTunables(LITTLECores.get(0), LITTLECores.get(LITTLECores.size() - 1)));
-            LITTLEGovernorsCard.addItem(governorTunablesLITTLE);
-
-            items.add(LITTLECoresCard);
-            items.add(LITTLEFrequenciesCard);
-            items.add(LITTLEGovernorsCard);
+            if (mCPUFreq.hasMaxScreenOffFreq(cluster.firstCpu) && hasFreqs) {
+                SelectView screenOff = new SelectView();
+                screenOff.setTitle(getString(R.string.cluster_label, cluster.index + 1));
+                screenOff.setSummary(getString(R.string.cpu_max_screen_off_freq_summary));
+                screenOff.setItems(freqLabels);
+                screenOff.setOnItemSelected((selectView, position, item) ->
+                        mCPUFreq.setMaxScreenOffFreq(freqs.get(position), cluster.firstCpu, cluster.lastCpu, getActivity()));
+                screenOffCard.addItem(screenOff);
+                mScreenOffSelects.add(screenOff);
+                mScreenOffClusters.add(cluster);
+            }
         }
+
+        if (screenOffCard.size() > 0) {
+            items.add(screenOffCard);
+        }
+    }
+
+    private int readClusterCurFreq(CPUFreq.Cluster cluster) {
+        for (int cpu : cluster.cpus) {
+            int freq = mCPUFreq.getCurFreq(cpu);
+            if (freq > 0) return freq;
+        }
+        return 0;
+    }
+
+    private int findClosestFreqIndex(List<Integer> freqs, int target) {
+        if (freqs == null || freqs.isEmpty() || target <= 0) return -1;
+        int exact = freqs.indexOf(target);
+        if (exact >= 0) return exact;
+        int bestIdx = 0;
+        int bestDiff = Math.abs(freqs.get(0) - target);
+        for (int i = 1; i < freqs.size(); i++) {
+            int diff = Math.abs(freqs.get(i) - target);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestIdx = i;
+            }
+        }
+        return bestIdx;
+    }
+
+    private void showCoresDialog(final CPUFreq.Cluster cluster) {
+        if (getActivity() == null) return;
+        String[] labels = new String[cluster.cpus.size()];
+        for (int i = 0; i < cluster.cpus.size(); i++) {
+            int core = cluster.cpus.get(i);
+            int freq = mCPUFreq.getCurFreq(core);
+            String state = freq == 0 ? getString(R.string.offline) : ClusterControlView.formatFreqKhz(freq);
+            labels[i] = getString(R.string.core, core + 1) + "  •  " + state;
+        }
+
+        mCoresDialog = new Dialog(getActivity())
+                .setTitle(getString(R.string.cores_toggle_title, cluster.getCoresDisplay()))
+                .setItems(labels, (dialog, which) -> {
+                    int core = cluster.cpus.get(which);
+                    if (core == 0) {
+                        Utils.toast(R.string.no_offline_core, getActivity());
+                    } else {
+                        boolean currentlyOnline = mCPUFreq.getCurFreq(core) != 0;
+                        mCPUFreq.onlineCpu(core, !currentlyOnline, true, getActivity());
+                    }
+                })
+                .setOnDismissListener(dialog -> mCoresDialog = null);
+        mCoresDialog.show();
     }
 
     private void showGovernorTunables(int min, int max) {
@@ -372,7 +352,7 @@ public class CPUFragment extends RecyclerViewFragment {
             views.add(cpuQuietGovernors);
         }
 
-        if (views.size() > 0) {
+        if (!views.isEmpty()) {
             DescriptionView descriptionView = new DescriptionView();
             descriptionView.setSummary(getString(R.string.cpu_quiet_summary));
             cpuQuietCard.addItem(descriptionView);
@@ -397,7 +377,7 @@ public class CPUFragment extends RecyclerViewFragment {
             enable.addOnSwitchListener((switchView, isChecked)
                     -> mCPUBoost.enableCpuBoost(isChecked, getActivity()));
 
-            items.add(enable);
+            cpuBoost.add(enable);
         }
 
         if (mCPUBoost.hasCpuBoostDebugMask()) {
@@ -522,9 +502,13 @@ public class CPUFragment extends RecyclerViewFragment {
             cpuBoost.add(hotplug);
         }
 
-        if (cpuBoost.size() > 0) {
-            items.add(title);
-            items.addAll(cpuBoost);
+        if (!cpuBoost.isEmpty()) {
+            CardView boostCard = new CardView();
+            boostCard.setTitle(getString(R.string.cpu_boost));
+            for (RecyclerViewItem item : cpuBoost) {
+                boostCard.addItem(item);
+            }
+            items.add(boostCard);
         }
     }
 
@@ -539,64 +523,35 @@ public class CPUFragment extends RecyclerViewFragment {
         items.add(touchBoost);
     }
 
-    private float[] mCPUUsages;
-    private boolean[] mCPUStates;
-    private int[] mCPUFreqs;
-    private int mCPUMaxFreqBig;
-    private int mCPUMinFreqBig;
-    private int mCPUMaxScreenOffFreqBig;
-    private String mCPUGovernorStrBig;
-    private int mCPUMaxFreqLITTLE;
-    private int mCPUMinFreqLITTLE;
-    private int mCPUMaxScreenOffFreqLITTLE;
-    private String mCPUGovernorStrLITTLE;
-
     @Override
     protected void refreshThread() {
         super.refreshThread();
-        if (mCoresBig.size() == 0) return;
+        if (mClusterHolders.isEmpty()) return;
 
         try {
             mCPUUsages = mCPUFreq.getCpuUsage();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
-        mCPUStates = new boolean[mCPUFreq.getCpuCount()];
-        for (int i = 0; i < mCPUStates.length; i++) {
-            mCPUStates[i] = !mCPUFreq.isOffline(i);
+        if (mCPUUsages == null) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) {
+            }
         }
 
-        mCPUFreqs = new int[mCPUFreq.getCpuCount()];
-        for (int i = 0; i < mCPUFreqs.length; i++) {
-            mCPUFreqs[i] = mCPUFreq.getCurFreq(i);
-        }
-
-        if (mCPUMaxBig != null) {
-            mCPUMaxFreqBig = mCPUFreq.getMaxFreq(mCPUMaxFreqBig == 0);
-        }
-        if (mCPUMinBig != null) {
-            mCPUMinFreqBig = mCPUFreq.getMinFreq(mCPUMinFreqBig == 0);
-        }
-        if (mCPUMaxScreenOffBig != null) {
-            mCPUMaxScreenOffFreqBig = mCPUFreq.getMaxScreenOffFreq(mCPUMaxScreenOffFreqBig == 0);
-        }
-        if (mCPUGovernorBig != null) {
-            mCPUGovernorStrBig = mCPUFreq.getGovernor(mCPUGovernorStrBig == null);
-        }
-        if (mCPUMaxLITTLE != null) {
-            mCPUMaxFreqLITTLE = mCPUFreq.getMaxFreq(mCPUFreq.getLITTLECpu(), mCPUMaxFreqLITTLE == 0);
-        }
-        if (mCPUMinLITTLE != null) {
-            mCPUMinFreqLITTLE = mCPUFreq.getMinFreq(mCPUFreq.getLITTLECpu(), mCPUMinFreqLITTLE == 0);
-        }
-        if (mCPUMaxScreenOffLITTLE != null) {
-            mCPUMaxScreenOffFreqLITTLE = mCPUFreq.getMaxScreenOffFreq(mCPUFreq.getLITTLECpu(),
-                    mCPUMaxScreenOffFreqLITTLE == 0);
-        }
-        if (mCPUGovernorLITTLE != null) {
-            mCPUGovernorStrLITTLE = mCPUFreq.getGovernor(mCPUFreq.getLITTLECpu(),
-                    mCPUGovernorStrLITTLE == null);
+        for (ClusterHolder holder : mClusterHolders) {
+            int cpu = holder.cluster.firstCpu;
+            holder.curFreq = readClusterCurFreq(holder.cluster);
+            holder.minFreq = mCPUFreq.getMinFreq(cpu, holder.minFreq == 0);
+            holder.maxFreq = mCPUFreq.getMaxFreq(cpu, holder.maxFreq == 0);
+            String gov = mCPUFreq.getGovernor(cpu, holder.governor == null || holder.governor.isEmpty());
+            if (gov != null && !gov.isEmpty()) {
+                holder.governor = gov;
+            }
+            if (mCPUFreq.hasMaxScreenOffFreq(cpu)) {
+                holder.screenOffFreq = mCPUFreq.getMaxScreenOffFreq(cpu, holder.screenOffFreq == 0);
+            }
         }
     }
 
@@ -604,84 +559,45 @@ public class CPUFragment extends RecyclerViewFragment {
     protected void refresh() {
         super.refresh();
 
-        if (mCPUUsages != null && mCPUStates != null) {
-            refreshUsages(mCPUUsages, mCPUUsageBig, mCPUFreq.getBigCpuRange(), mCPUStates);
-            if (mCPUFreq.isBigLITTLE()) {
-                refreshUsages(mCPUUsages, mCPUUsageLITTLE, mCPUFreq.getLITTLECpuRange(), mCPUStates);
+        if (mDashboard != null) {
+            if (mCPUUsages != null && mCPUUsages.length > 0) {
+                mDashboard.setOverallUsage(Math.round(mCPUUsages[0]));
+            }
+            for (int i = 0; i < mClusterHolders.size(); i++) {
+                ClusterHolder holder = mClusterHolders.get(i);
+                int maxFreq = (holder.freqs != null && !holder.freqs.isEmpty())
+                        ? holder.freqs.get(holder.freqs.size() - 1) : 0;
+                int pct = (holder.curFreq > 0 && maxFreq > 0)
+                        ? Math.round((float) holder.curFreq / maxFreq * 100f) : 0;
+                String freqText = holder.curFreq > 0
+                        ? ClusterControlView.formatFreqKhz(holder.curFreq)
+                        : getString(R.string.offline);
+                mDashboard.updateRow(i, pct, freqText);
             }
         }
 
-        if (mCPUMaxBig != null && mCPUMaxFreqBig != 0) {
-            mCPUMaxBig.setItem((mCPUMaxFreqBig / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUMinBig != null && mCPUMinFreqBig != 0) {
-            mCPUMinBig.setItem((mCPUMinFreqBig / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUMaxScreenOffBig != null && mCPUMaxScreenOffFreqBig != 0) {
-            mCPUMaxScreenOffBig.setItem((mCPUMaxScreenOffFreqBig / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUGovernorBig != null && mCPUGovernorStrBig != null && !mCPUGovernorStrBig.isEmpty()) {
-            mCPUGovernorBig.setItem(mCPUGovernorStrBig);
-        }
-        if (mCPUMaxLITTLE != null && mCPUMaxFreqLITTLE != 0) {
-            mCPUMaxLITTLE.setItem((mCPUMaxFreqLITTLE / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUMinLITTLE != null && mCPUMinFreqLITTLE != 0) {
-            mCPUMinLITTLE.setItem((mCPUMinFreqLITTLE / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUMaxScreenOffLITTLE != null && mCPUMaxScreenOffFreqLITTLE != 0) {
-            mCPUMaxScreenOffLITTLE.setItem((mCPUMaxScreenOffFreqLITTLE / 1000) + getString(R.string.mhz));
-        }
-        if (mCPUGovernorLITTLE != null && mCPUGovernorStrLITTLE != null && !mCPUGovernorStrLITTLE.isEmpty()) {
-            mCPUGovernorLITTLE.setItem(mCPUGovernorStrLITTLE);
-        }
-
-        if (mCPUFreqs != null) {
-            refreshCores(mCoresBig, mCPUFreqs);
-            if (mCPUFreq.isBigLITTLE()) {
-                refreshCores(mCoresLITTLE, mCPUFreqs);
+        for (ClusterHolder holder : mClusterHolders) {
+            if (holder.governor != null && !holder.governor.isEmpty()) {
+                holder.control.setCurrentGovernor(holder.governor);
             }
-        }
-    }
-
-    private void refreshUsages(float[] usages, XYGraphView graph, List<Integer> cores,
-                               boolean[] coreStates) {
-        if (graph != null) {
-            float average = 0;
-            int size = 0;
-            for (int core : cores) {
-                if (core + 1 < usages.length) {
-                    if (coreStates[core]) {
-                        average += usages[core + 1];
-                    }
-                    size++;
+            if (holder.freqs != null && !holder.freqs.isEmpty()) {
+                if (holder.minFreq > 0) {
+                    holder.control.setMinIndex(findClosestFreqIndex(holder.freqs, holder.minFreq));
+                }
+                if (holder.maxFreq > 0) {
+                    holder.control.setMaxIndex(findClosestFreqIndex(holder.freqs, holder.maxFreq));
                 }
             }
-            average /= size;
-            graph.setText(Math.round(average) + "%");
-            graph.addPercentage(Math.round(average));
         }
-    }
 
-    private void refreshCores(SparseArray<SwitchView> array, int[] freqs) {
-        for (int i = 0; i < array.size(); i++) {
-            SwitchView switchView = array.valueAt(i);
-            if (switchView != null) {
-                final int core = array.keyAt(i);
-                int freq = freqs[core];
-
-                String freqText = freq == 0 ? getString(R.string.offline) : (freq / 1000)
-                        + getString(R.string.mhz);
-                switchView.clearOnSwitchListener();
-                switchView.setChecked(freq != 0);
-                switchView.setSummary(getString(R.string.core, core + 1) + " - " + freqText);
-                switchView.addOnSwitchListener((switchView1, isChecked) -> {
-                    if (core == 0) {
-                        Utils.toast(R.string.no_offline_core, getActivity());
-                    } else {
-                        mCPUFreq.onlineCpu(core, isChecked, true, getActivity());
-                    }
-                });
+        for (int i = 0; i < mScreenOffSelects.size() && i < mScreenOffClusters.size(); i++) {
+            SelectView selectView = mScreenOffSelects.get(i);
+            CPUFreq.Cluster cluster = mScreenOffClusters.get(i);
+            for (ClusterHolder holder : mClusterHolders) {
+                if (holder.cluster == cluster && holder.screenOffFreq > 0) {
+                    selectView.setItem(ClusterControlView.formatFreqKhz(holder.screenOffFreq));
+                    break;
+                }
             }
         }
     }

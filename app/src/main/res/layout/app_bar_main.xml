@@ -4,15 +4,55 @@
     android:id="@+id/appbarlayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/colorPrimary"
+    android:background="@color/toolbar_bg"
     android:theme="@style/AppTheme.AppBarOverlay"
-    app:elevation="@dimen/app_bar_elevation">
+    app:elevation="0dp">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:contentInsetLeft="72dp"
-        app:contentInsetStart="72dp"
-        app:popupTheme="@style/AppTheme.PopupOverlay" />
+        app:contentInsetStartWithNavigation="0dp"
+        app:popupTheme="@style/AppTheme.PopupOverlay">
+
+        <LinearLayout
+            android:id="@+id/apply_on_boot_container"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="8dp"
+            android:paddingRight="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="6dp"
+                android:text="@string/boot_short"
+                android:textColor="@color/tab_unselected"
+                android:textSize="12sp" />
+
+            <android.support.v7.widget.SwitchCompat
+                android:id="@+id/apply_on_boot_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false" />
+        </LinearLayout>
+    </android.support.v7.widget.Toolbar>
+
+    <android.support.design.widget.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@color/toolbar_bg"
+        app:tabIndicatorColor="@color/cyan_accent"
+        app:tabIndicatorHeight="2.5dp"
+        app:tabMode="scrollable"
+        app:tabPaddingEnd="18dp"
+        app:tabPaddingStart="18dp"
+        app:tabSelectedTextColor="@color/white"
+        app:tabTextColor="@color/tab_unselected" />
 </android.support.design.widget.AppBarLayout>

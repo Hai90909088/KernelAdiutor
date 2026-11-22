@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="textcolor_light">#8a000000</color>
-    <color name="textcolor_dark">#b3ffffff</color>
+    <color name="textcolor_light">#b3ffffff</color>
+    <color name="textcolor_dark">#9aa8b5</color>
 
     <color name="black">#000000</color>
     <color name="white">#ffffff</color>
     <color name="green">#5fb962</color>
     <color name="red">#f66055</color>
+
+    <color name="amoled_bg">#000000</color>
+    <color name="toolbar_bg">#0e141b</color>
+    <color name="card_bg">#080b0f</color>
+    <color name="card_border">#25323f</color>
+    <color name="pill_bg">#040608</color>
+    <color name="pill_border">#364452</color>
+    <color name="cyan_accent">#29b6f6</color>
+    <color name="cyan_track">#0d2d3b</color>
+    <color name="cyan_track_border">#1e5e78</color>
+    <color name="tab_unselected">#9aa8b5</color>
 </resources>
