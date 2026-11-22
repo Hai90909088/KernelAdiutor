@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kernel Adiutor</title>
+  <style>
+    :root {
+      --amoled-bg: #000000;
+      --toolbar-bg: #0e141b;
+      --card-bg: #080b0f;
+      --card-border: #25323f;
+      --pill-bg: #040608;
+      --pill-border: #364452;
+      --cyan: #29b6f6;
+      --cyan-track: #0d2d3b;
+      --cyan-track-border: #1e5e78;
+      --text: #ffffff;
+      --muted: #9aa8b5;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #05080c;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 420px;
+      height: 100vh;
+      max-height: 860px;
+      background: var(--amoled-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid #161f29;
+      border-right: 1px solid #161f29;
+    }
+
+    .toolbar {
+      height: 52px;
+      background: var(--toolbar-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+      line-height: 1;
+    }
+
+    .app-title {
+      font-size: 18px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .boot-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .switch {
+      width: 38px;
+      height: 20px;
+      border-radius: 999px;
+      background: #44505c;
+      position: relative;
+      transition: background 150ms ease;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #cfd8dc;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+
+    .switch.on {
+      background: rgba(41, 182, 246, 0.45);
+    }
+
+    .switch.on::after {
+      transform: translateX(18px);
+      background: var(--cyan);
+    }
+
+    .tabs {
+      height: 42px;
+      background: var(--toolbar-bg);
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid #17212b;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 0 18px;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .tab-btn.active {
+      color: var(--text);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2.5px;
+      background: var(--cyan);
+    }
+
+    .tab-panel {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
+
+    .fixed-header {
+      padding: 6px 8px 2px;
+      flex-shrink: 0;
+    }
+
+    .overall-bar {
+      height: 20px;
+      border-radius: 5px;
+      background: var(--cyan-track);
+      border: 1px solid var(--cyan-track-border);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--cyan);
+      transition: width 250ms ease;
+    }
+
+    .bar-label-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.65);
+    }
+
+    .bars-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 4px 10px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0;
+    }
+
+    .bar-row-name {
+      width: 44px;
+      font-size: 12px;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 15px;
+      border-radius: 4px;
+      background: var(--cyan-track);
+      border: 1px solid var(--cyan-track-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar-row-val {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .content-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2px 8px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cluster-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+
+    .cluster-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-height: 36px;
+    }
+
+    .cluster-id {
+      width: 64px;
+      text-align: center;
+    }
+
+    .cluster-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cluster-sub {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .pill-select {
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 13px;
+      height: 34px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .pill-gov {
+      flex: 1;
+      height: 36px;
+    }
+
+    .pill-gov select,
+    .pill-freq select {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      width: 100%;
+      text-align: center;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .pill-gov select option,
+    .pill-freq select option {
+      background: #0e141b;
+      color: #ffffff;
+    }
+
+    .cores-box {
+      width: 56px;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .freq-row {
+      display: flex;
+      align-items: center;
+      height: 40px;
+      gap: 4px;
+    }
+
+    .freq-label {
+      width: 64px;
+      font-size: 12.5px;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .pill-freq {
+      width: 94px;
+      flex-shrink: 0;
+      font-size: 12.5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .step-btn {
+      width: 30px;
+      height: 36px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--cyan);
+      cursor: pointer;
+      height: 4px;
+    }
+
+    .simple-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .simple-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--cyan);
+    }
+
+    .simple-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-top: 1px solid #16202a;
+      font-size: 13px;
+    }
+
+    .simple-row:first-of-type {
+      border-top: none;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="toolbar">
+      <div class="toolbar-left">
+        <button class="menu-btn" aria-label="Menu">☰</button>
+        <span class="app-title">Kernel Adiutor</span>
+      </div>
+      <div class="boot-toggle" id="bootToggle">
+        <span>Khởi động</span>
+        <div class="switch" id="bootSwitch"></div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="cpu">CPU</button>
+      <button class="tab-btn" data-tab="gpu">GPU</button>
+      <button class="tab-btn" data-tab="io">Lịch trình nhập xuất I/O</button>
+    </nav>
+
+    <section class="tab-panel active" id="tab-cpu">
+      <div class="fixed-header">
+        <div class="overall-bar">
+          <div class="bar-fill" id="cpuOverallFill" style="width: 47%"></div>
+          <div class="bar-label-center" id="cpuOverallText">47%</div>
+        </div>
+        <div class="bars-card" id="cpuDashBars"></div>
+      </div>
+      <div class="content-list" id="cpuClusters"></div>
+    </section>
+
+    <section class="tab-panel" id="tab-gpu">
+      <div class="fixed-header">
+        <div class="overall-bar">
+          <div class="bar-fill" style="width: 32%"></div>
+          <div class="bar-label-center">32%</div>
+        </div>
+        <div class="bars-card">
+          <div class="bar-row">
+            <span class="bar-row-name">GPU</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 55%"></div>
+              <span class="bar-row-val">415MHz</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="content-list">
+        <div class="cluster-card">
+          <div class="cluster-head">
+            <div class="cluster-id">
+              <div class="cluster-name">GPU</div>
+              <div class="cluster-sub">TĐ.</div>
+            </div>
+            <div class="pill-select pill-gov">
+              <select>
+                <option>msm-adreno-tz</option>
+                <option>performance</option>
+                <option>powersave</option>
+              </select>
+            </div>
+          </div>
+          <div class="freq-row">
+            <span class="freq-label">Tối thiểu</span>
+            <div class="pill-select pill-freq"><select><option>180MHz</option><option>266MHz</option></select></div>
+            <button class="step-btn">—</button>
+            <input type="range" min="0" max="5" value="0" />
+            <button class="step-btn">+</button>
+          </div>
+          <div class="freq-row">
+            <span class="freq-label">Tối đa</span>
+            <div class="pill-select pill-freq"><select><option>680MHz</option><option>585MHz</option></select></div>
+            <button class="step-btn">—</button>
+            <input type="range" min="0" max="5" value="5" />
+            <button class="step-btn">+</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="tab-io">
+      <div class="content-list" style="padding-top: 8px;">
+        <div class="simple-card">
+          <div class="simple-title">Bộ nhớ trong</div>
+          <div class="simple-row">
+            <div>
+              <div>Lịch trình</div>
+              <div class="muted">kyber</div>
+            </div>
+          </div>
+          <div class="simple-row">
+            <div>
+              <div>Đọc trước</div>
+              <div class="muted">512kB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const clusters = [
+      {
+        name: "CPU 1",
+        cores: "1,2,3",
+        governor: "walt",
+        freqs: ["307MHz", "499MHz", "768MHz", "1,02GHz", "1,34GHz", "1,65GHz", "2,02GHz"],
+        minIdx: 0,
+        maxIdx: 6,
+        curIdx: 3
+      },
+      {
+        name: "CPU 2",
+        cores: "4,5,6,7",
+        governor: "walt",
+        freqs: ["499MHz", "768MHz", "1,05GHz", "1,34GHz", "1,65GHz", "2,02GHz", "2,42GHz"],
+        minIdx: 0,
+        maxIdx: 4,
+        curIdx: 4
+      },
+      {
+        name: "CPU 3",
+        cores: "8",
+        governor: "walt",
+        freqs: ["595MHz", "883MHz", "1,22GHz", "1,49GHz", "1,71GHz", "2,11GHz", "2,65GHz"],
+        minIdx: 0,
+        maxIdx: 4,
+        curIdx: 4
+      }
+    ];
+
+    const bootState = { cpu: false, gpu: false, io: false };
+    let activeTab = "cpu";
+
+    const bootToggle = document.getElementById("bootToggle");
+    const bootSwitch = document.getElementById("bootSwitch");
+    bootToggle.addEventListener("click", () => {
+      bootState[activeTab] = !bootState[activeTab];
+      bootSwitch.classList.toggle("on", bootState[activeTab]);
+    });
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeTab = btn.dataset.tab;
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === `tab-${activeTab}`));
+        bootSwitch.classList.toggle("on", bootState[activeTab]);
+      });
+    });
+
+    function renderDashboard() {
+      const container = document.getElementById("cpuDashBars");
+      container.innerHTML = clusters.map((c) => {
+        const pct = Math.round(((c.curIdx + 1) / c.freqs.length) * 100);
+        return `
+          <div class="bar-row">
+            <span class="bar-row-name">${c.name}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${pct}%"></div>
+              <span class="bar-row-val">${c.freqs[c.curIdx]}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderClusters() {
+      const container = document.getElementById("cpuClusters");
+      container.innerHTML = "";
+      clusters.forEach((c, ci) => {
+        const card = document.createElement("div");
+        card.className = "cluster-card";
+        card.innerHTML = `
+          <div class="cluster-head">
+            <div class="cluster-id">
+              <div class="cluster-name">${c.name}</div>
+              <div class="cluster-sub">TĐ.</div>
+            </div>
+            <div class="pill-select pill-gov">
+              <select>
+                <option ${c.governor === "walt" ? "selected" : ""}>walt</option>
+                <option ${c.governor === "schedutil" ? "selected" : ""}>schedutil</option>
+                <option ${c.governor === "performance" ? "selected" : ""}>performance</option>
+              </select>
+            </div>
+            <div class="cores-box">
+              <div>Lõi</div>
+              <div>${c.cores}</div>
+            </div>
+          </div>
+          <div class="freq-row">
+            <span class="freq-label">Tối thiểu</span>
+            <div class="pill-select pill-freq">
+              <select data-type="min" data-ci="${ci}">
+                ${c.freqs.map((f, fi) => `<option value="${fi}" ${fi === c.minIdx ? "selected" : ""}>${f}</option>`).join("")}
+              </select>
+            </div>
+            <button class="step-btn" data-step="-1" data-type="min" data-ci="${ci}">—</button>
+            <input type="range" min="0" max="${c.freqs.length - 1}" value="${c.minIdx}" data-type="min" data-ci="${ci}" />
+            <button class="step-btn" data-step="1" data-type="min" data-ci="${ci}">+</button>
+          </div>
+          <div class="freq-row">
+            <span class="freq-label">Tối đa</span>
+            <div class="pill-select pill-freq">
+              <select data-type="max" data-ci="${ci}">
+                ${c.freqs.map((f, fi) => `<option value="${fi}" ${fi === c.maxIdx ? "selected" : ""}>${f}</option>`).join("")}
+              </select>
+            </div>
+            <button class="step-btn" data-step="-1" data-type="max" data-ci="${ci}">—</button>
+            <input type="range" min="0" max="${c.freqs.length - 1}" value="${c.maxIdx}" data-type="max" data-ci="${ci}" />
+            <button class="step-btn" data-step="1" data-type="max" data-ci="${ci}">+</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      container.querySelectorAll("select[data-ci]").forEach((sel) => {
+        sel.addEventListener("change", (e) => {
+          updateClusterFreq(Number(sel.dataset.ci), sel.dataset.type, Number(e.target.value));
+        });
+      });
+
+      container.querySelectorAll("input[type='range']").forEach((rng) => {
+        rng.addEventListener("input", (e) => {
+          updateClusterFreq(Number(rng.dataset.ci), rng.dataset.type, Number(e.target.value));
+        });
+      });
+
+      container.querySelectorAll(".step-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const ci = Number(btn.dataset.ci);
+          const type = btn.dataset.type;
+          const delta = Number(btn.dataset.step);
+          const current = type === "min" ? clusters[ci].minIdx : clusters[ci].maxIdx;
+          updateClusterFreq(ci, type, current + delta);
+        });
+      });
+    }
+
+    function updateClusterFreq(ci, type, next) {
+      const c = clusters[ci];
+      const clamped = Math.max(0, Math.min(c.freqs.length - 1, next));
+      if (type === "min") {
+        c.minIdx = clamped;
+        if (c.minIdx > c.maxIdx) c.maxIdx = c.minIdx;
+      } else {
+        c.maxIdx = clamped;
+        if (c.maxIdx < c.minIdx) c.minIdx = c.maxIdx;
+      }
+      c.curIdx = Math.min(c.maxIdx, Math.max(c.minIdx, c.curIdx));
+      renderClusters();
+      renderDashboard();
+    }
+
+    renderDashboard();
+    renderClusters();
+  </script>
+</body>
+</html>

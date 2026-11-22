@@ -994,10 +994,6 @@ public abstract class RecyclerViewFragment extends BaseFragment {
     protected void refresh() {
     }
 
-    protected boolean showAd() {
-        return false;
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();

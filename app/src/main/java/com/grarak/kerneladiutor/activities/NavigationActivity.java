@@ -97,7 +97,6 @@ public class NavigationActivity extends BaseActivity
     private long mLastTimeBackbuttonPressed;
 
     private int mSelection;
-    private boolean mLicenseDialog = true;
 
     @Override
     protected boolean setStatusBarColor() {
@@ -164,10 +163,6 @@ public class NavigationActivity extends BaseActivity
                 Intent intent = new Intent(activity, TextActivity.class);
                 intent.putExtra(TextActivity.MESSAGE_INTENT, activity.getString(mHasRoot ?
                         R.string.no_busybox : R.string.no_root));
-                intent.putExtra(TextActivity.SUMMARY_INTENT,
-                        mHasRoot ? "https://play.google.com/store/apps/details?id=stericson.busybox" :
-                                "https://www.google.com/search?site=&source=hp&q=root+"
-                                        + Device.getVendor() + "+" + Device.getModel());
                 activity.startActivity(intent);
                 activity.finish();
                 return;
@@ -189,29 +184,7 @@ public class NavigationActivity extends BaseActivity
     }
 
     private void init(Bundle savedInstanceState) {
-        int result = getIntent().getIntExtra("result", -1);
-
-        if ((result == 1 || result == 2) && mLicenseDialog) {
-            ViewUtils.dialogBuilder(getString(R.string.license_invalid),
-                    null,
-                    (dialog, which) -> {
-                    },
-                    dialog -> mLicenseDialog = false, this)
-                    .show();
-        } else if (result == 3 && mLicenseDialog) {
-            ViewUtils.dialogBuilder(getString(R.string.pirated),
-                    null,
-                    (dialog, which) -> {
-                    },
-                    dialog -> mLicenseDialog = false, this)
-                    .show();
-        } else {
-            mLicenseDialog = false;
-            if (result == 0) {
-                Utils.DONATED = true;
-            }
-        }
-
+        Utils.DONATED = true;
         setContentView(R.layout.activity_navigation);
         Toolbar toolbar = getToolBar();
         setSupportActionBar(toolbar);
@@ -239,7 +212,6 @@ public class NavigationActivity extends BaseActivity
 
         if (savedInstanceState != null) {
             mSelection = savedInstanceState.getInt(INTENT_SECTION);
-            mLicenseDialog = savedInstanceState.getBoolean("license");
         }
 
         appendFragments(false);
@@ -445,7 +417,6 @@ public class NavigationActivity extends BaseActivity
 
         outState.putParcelableArrayList("fragments", mFragments);
         outState.putInt(INTENT_SECTION, mSelection);
-        outState.putBoolean("license", mLicenseDialog);
     }
 
     @Override

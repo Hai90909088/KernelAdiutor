@@ -37,7 +37,6 @@ public class AppSettings {
     private static final String BANNER_SIZE = "banner_size";
     private static final String HIDE_BANNER = "hide_banner";
     private static final String FORCE_CARDS = "forcecards";
-    private static final String GH_AD_SHOWN_POSTFIX = "%s_shown";
     private static final String CORE_CTL_MIN_CPUS_BIG = "core_ctl_min_cpus_big";
     private static final String INITD_ONBOOT = "initd_onboot";
     private static final String PROFILE_TILE = "profiletile";
@@ -46,7 +45,6 @@ public class AppSettings {
     private static final String KGAMMA_PROFILE = "kgamma_profile";
     private static final String GAMMA_CONTROL_PROFILE = "gamma_control_profile";
     private static final String DSI_PANEL_PROFILE = "dsi_panel_profile";
-    private static final String DATA_SHARING = "data_sharing";
     private static final String SECTION_ICONS = "section_icons";
     private static final String FRAGMENT_OPENED_POSTFIX = "%s_opened";
     private static final String FINGERPRINT = "fingerprint";
@@ -125,14 +123,6 @@ public class AppSettings {
         return Prefs.getBoolean(FORCE_CARDS, false, context);
     }
 
-    public static int getGHAdShown(String name, Context context) {
-        return Prefs.getInt(String.format(GH_AD_SHOWN_POSTFIX, name), 0, context);
-    }
-
-    public static void saveGHAdShown(String name, int shown, Context context) {
-        Prefs.saveInt(String.format(GH_AD_SHOWN_POSTFIX, name), shown, context);
-    }
-
     public static int getCoreCtlMinCpusBig(Context context) {
         return Prefs.getInt(CORE_CTL_MIN_CPUS_BIG, 2, context);
     }
@@ -199,14 +189,6 @@ public class AppSettings {
 
     public static void saveDsiPanelProfile(int value, Context context) {
         Prefs.saveInt(DSI_PANEL_PROFILE, value, context);
-    }
-
-    public static boolean isDataSharing(Context context) {
-        return Prefs.getBoolean(DATA_SHARING, true, context);
-    }
-
-    public static void saveDataSharing(boolean enabled, Context context) {
-        Prefs.saveBoolean(DATA_SHARING, enabled, context);
     }
 
     public static boolean isSectionIcons(Context context) {

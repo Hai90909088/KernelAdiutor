@@ -11,12 +11,6 @@
     <string name="cancel">Huỷ</string>
     <string name="ok">OK</string>
     <string name="unknown">Không xác định</string>
-    <string name="license_invalid">ขอขอบคุณที่คุณได้สมัครซื้อแอพพลิเคชั่นแล้ว! อาจไม่สามารถตรวจสอบว่าสัญญาอนุญาตล้มเหลว โปรดลองอีกครั้งหลังจาก กรุณาอย่าติดต่อกับฉัน คุณต้องเข้าถึงอินเทอร์เน็ต!</string>
-    <string name="pirated">Có vẻ như ứng dụng ủng hộ đã không được mua thông qua cửa hàng Play! Nếu bạn vi phạm bản quyền, bạn nên cảm thấy xấu hổ!</string>
-    <string name="donate">Ủng hộ</string>
-    <string name="donate_summary">Tính năng này chỉ có sẵn khi ứng dụng ủng hộ được cài đặt! Đừng lo lắng. Bởi vì ứng dụng này là mã nguồn mở, bạn có thể dễ dàng xây dựng nó cho mình và loại bỏ sự kiểm tra này. Nhưng tôi hy vọng bạn hỗ trợ các nhà phát triển. Cảm ơn bạn đã sử dụng Kernel Adiutor! Một khi bạn mua các ứng dụng ủng hộ bạn phải khởi động lại Kernel Adiutor để kích hoạt tất cả tính năng.</string>
-    <string name="donate_nope">Tôi sẽ ko bị dụ đâu :P!</string>
-    <string name="donate_yes">Tôi yêu ứng dụng này. Phải ủng hộ!</string>
     <string name="apply_on_boot">Áp dụng khi khởi động</string>
     <string name="apply_on_boot_text">Áp dụng thiết đặt trong %d giây.</string>
     <string name="apply_on_boot_complete">Áp dụng thiết đặt hoàn tất.</string>
