@@ -47,7 +47,6 @@ import android.widget.Toast;
 
 import com.grarak.kerneladiutor.BuildConfig;
 import com.grarak.kerneladiutor.activities.StartActivity;
-import com.grarak.kerneladiutor.activities.StartActivityMaterial;
 import com.grarak.kerneladiutor.utils.root.RootFile;
 import com.grarak.kerneladiutor.utils.root.RootUtils;
 
@@ -149,24 +148,15 @@ public class Utils {
 
     public static void setupStartActivity(Context context) {
         PackageManager pm = context.getPackageManager();
-        if (Utils.hideStartActivity()) {
-            pm.setComponentEnabledSetting(new ComponentName(context, StartActivity.class),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-            pm.setComponentEnabledSetting(new ComponentName(context, StartActivityMaterial.class),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-        } else {
-            setStartActivity(Prefs.getBoolean("materialicon", false, context), context);
-        }
+        pm.setComponentEnabledSetting(new ComponentName(context, StartActivity.class),
+                Utils.hideStartActivity() ? PackageManager.COMPONENT_ENABLED_STATE_DISABLED :
+                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
     }
 
     public static void setStartActivity(boolean material, Context context) {
         PackageManager pm = context.getPackageManager();
         pm.setComponentEnabledSetting(new ComponentName(context, StartActivity.class),
-                material ? PackageManager.COMPONENT_ENABLED_STATE_DISABLED :
-                        PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
-        pm.setComponentEnabledSetting(new ComponentName(context, StartActivityMaterial.class),
-                material ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
-                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
     }
 
     public static boolean hideStartActivity() {
@@ -202,10 +192,6 @@ public class Utils {
             e.printStackTrace();
             return null;
         }
-    }
-
-    public static boolean hasCMSDK() {
-        return cyanogenmod.os.Build.CM_VERSION.SDK_INT >= cyanogenmod.os.Build.CM_VERSION_CODES.APRICOT;
     }
 
     public static CharSequence htmlFrom(String text) {

@@ -46,62 +46,17 @@ import android.view.SubMenu;
 
 import com.grarak.kerneladiutor.R;
 import com.grarak.kerneladiutor.fragments.BaseFragment;
-import com.grarak.kerneladiutor.fragments.kernel.BatteryFragment;
 import com.grarak.kerneladiutor.fragments.kernel.CPUFragment;
-import com.grarak.kerneladiutor.fragments.kernel.CPUHotplugFragment;
-import com.grarak.kerneladiutor.fragments.kernel.CPUVoltageFragment;
-import com.grarak.kerneladiutor.fragments.kernel.EntropyFragment;
 import com.grarak.kerneladiutor.fragments.kernel.GPUFragment;
 import com.grarak.kerneladiutor.fragments.kernel.IOFragment;
-import com.grarak.kerneladiutor.fragments.kernel.KSMFragment;
-import com.grarak.kerneladiutor.fragments.kernel.LEDFragment;
-import com.grarak.kerneladiutor.fragments.kernel.LMKFragment;
-import com.grarak.kerneladiutor.fragments.kernel.MiscFragment;
-import com.grarak.kerneladiutor.fragments.kernel.ScreenFragment;
-import com.grarak.kerneladiutor.fragments.kernel.SoundFragment;
-import com.grarak.kerneladiutor.fragments.kernel.ThermalFragment;
-import com.grarak.kerneladiutor.fragments.kernel.VMFragment;
-import com.grarak.kerneladiutor.fragments.kernel.WakeFragment;
-import com.grarak.kerneladiutor.fragments.other.AboutFragment;
-import com.grarak.kerneladiutor.fragments.other.ContributorsFragment;
-import com.grarak.kerneladiutor.fragments.other.HelpFragment;
-import com.grarak.kerneladiutor.fragments.other.SettingsFragment;
 import com.grarak.kerneladiutor.fragments.recyclerview.RecyclerViewFragment;
-import com.grarak.kerneladiutor.fragments.statistics.DeviceFragment;
-import com.grarak.kerneladiutor.fragments.statistics.InputsFragment;
-import com.grarak.kerneladiutor.fragments.statistics.MemoryFragment;
-import com.grarak.kerneladiutor.fragments.statistics.OverallFragment;
-import com.grarak.kerneladiutor.fragments.tools.BackupFragment;
-import com.grarak.kerneladiutor.fragments.tools.BuildpropFragment;
-import com.grarak.kerneladiutor.fragments.tools.DataSharingFragment;
-import com.grarak.kerneladiutor.fragments.tools.InitdFragment;
-import com.grarak.kerneladiutor.fragments.tools.OnBootFragment;
-import com.grarak.kerneladiutor.fragments.tools.ProfileFragment;
-import com.grarak.kerneladiutor.fragments.tools.RecoveryFragment;
-import com.grarak.kerneladiutor.fragments.tools.customcontrols.CustomControlsFragment;
-import com.grarak.kerneladiutor.fragments.tools.downloads.DownloadsFragment;
-import com.grarak.kerneladiutor.services.monitor.Monitor;
 import com.grarak.kerneladiutor.utils.AppSettings;
-import com.grarak.kerneladiutor.utils.Device;
 import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
 import com.grarak.kerneladiutor.utils.ViewUtils;
-import com.grarak.kerneladiutor.utils.kernel.battery.Battery;
-import com.grarak.kerneladiutor.utils.kernel.cpuhotplug.Hotplug;
-import com.grarak.kerneladiutor.utils.kernel.cpuvoltage.Voltage;
-import com.grarak.kerneladiutor.utils.kernel.entropy.Entropy;
 import com.grarak.kerneladiutor.utils.kernel.gpu.GPU;
 import com.grarak.kerneladiutor.utils.kernel.io.IO;
-import com.grarak.kerneladiutor.utils.kernel.ksm.KSM;
-import com.grarak.kerneladiutor.utils.kernel.led.LED;
-import com.grarak.kerneladiutor.utils.kernel.lmk.LMK;
-import com.grarak.kerneladiutor.utils.kernel.screen.Screen;
-import com.grarak.kerneladiutor.utils.kernel.sound.Sound;
-import com.grarak.kerneladiutor.utils.kernel.thermal.Thermal;
-import com.grarak.kerneladiutor.utils.kernel.wake.Wake;
 import com.grarak.kerneladiutor.utils.root.RootUtils;
-import com.grarak.kerneladiutor.utils.tools.Backup;
-import com.grarak.kerneladiutor.utils.tools.SupportedDownloads;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -172,79 +127,14 @@ public class NavigationActivity extends BaseActivity
 
     private void initFragments() {
         mFragments.clear();
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.statistics));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.overall, OverallFragment.class, R.drawable.ic_chart));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.device, DeviceFragment.class, R.drawable.ic_device));
-        if (Device.MemInfo.getInstance().getItems().size() > 0) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.memory, MemoryFragment.class, R.drawable.ic_save));
-        }
-        if (Device.Input.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.inputs, InputsFragment.class, R.drawable.ic_keyboard));
-        }
         mFragments.add(new NavigationActivity.NavigationFragment(R.string.kernel));
         mFragments.add(new NavigationActivity.NavigationFragment(R.string.cpu, CPUFragment.class, R.drawable.ic_cpu));
-        if (Voltage.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.cpu_voltage, CPUVoltageFragment.class, R.drawable.ic_bolt));
-        }
-        if (Hotplug.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.cpu_hotplug, CPUHotplugFragment.class, R.drawable.ic_switch));
-        }
-        if (Thermal.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.thermal, ThermalFragment.class, R.drawable.ic_temperature));
-        }
         if (GPU.supported()) {
             mFragments.add(new NavigationActivity.NavigationFragment(R.string.gpu, GPUFragment.class, R.drawable.ic_gpu));
-        }
-        if (Screen.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.screen, ScreenFragment.class, R.drawable.ic_display));
-        }
-        if (Wake.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.wake, WakeFragment.class, R.drawable.ic_unlock));
-        }
-        if (Sound.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.sound, SoundFragment.class, R.drawable.ic_music));
-        }
-        if (Battery.getInstance(this).supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.battery, BatteryFragment.class, R.drawable.ic_battery));
-        }
-        if (LED.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.led, LEDFragment.class, R.drawable.ic_led));
         }
         if (IO.getInstance().supported()) {
             mFragments.add(new NavigationActivity.NavigationFragment(R.string.io_scheduler, IOFragment.class, R.drawable.ic_sdcard));
         }
-        if (KSM.getInstance().supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.ksm, KSMFragment.class, R.drawable.ic_merge));
-        }
-        if (LMK.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.lmk, LMKFragment.class, R.drawable.ic_stackoverflow));
-        }
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.virtual_memory, VMFragment.class, R.drawable.ic_server));
-        if (Entropy.supported()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.entropy, EntropyFragment.class, R.drawable.ic_numbers));
-        }
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.misc, MiscFragment.class, R.drawable.ic_clear));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.tools));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.data_sharing, DataSharingFragment.class, R.drawable.ic_database));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.custom_controls, CustomControlsFragment.class, R.drawable.ic_console));
-
-        SupportedDownloads supportedDownloads = new SupportedDownloads(this);
-        if (supportedDownloads.getLink() != null) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.downloads, DownloadsFragment.class, R.drawable.ic_download));
-        }
-        if (Backup.hasBackup()) {
-            mFragments.add(new NavigationActivity.NavigationFragment(R.string.backup, BackupFragment.class, R.drawable.ic_restore));
-        }
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.build_prop_editor, BuildpropFragment.class, R.drawable.ic_edit));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.profile, ProfileFragment.class, R.drawable.ic_layers));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.recovery, RecoveryFragment.class, R.drawable.ic_security));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.initd, InitdFragment.class, R.drawable.ic_shell));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.on_boot, OnBootFragment.class, R.drawable.ic_start));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.other));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.settings, SettingsFragment.class, R.drawable.ic_settings));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.about, AboutFragment.class, R.drawable.ic_about));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.contributors, ContributorsFragment.class, R.drawable.ic_people));
-        mFragments.add(new NavigationActivity.NavigationFragment(R.string.help, HelpFragment.class, R.drawable.ic_help));
     }
 
     private void init(Bundle savedInstanceState) {
@@ -310,10 +200,6 @@ public class NavigationActivity extends BaseActivity
             mSelection = firstTab();
         }
         onItemSelected(mSelection, false);
-
-        if (AppSettings.isDataSharing(this)) {
-            startService(new Intent(this, Monitor.class));
-        }
     }
 
     private int firstTab() {
@@ -386,7 +272,7 @@ public class NavigationActivity extends BaseActivity
 
         for (Map.Entry<Integer, Class<? extends Fragment>> entry : mActualFragments.entrySet()) {
             Class<? extends Fragment> fragmentClass = entry.getValue();
-            if (fragmentClass == null || fragmentClass == SettingsFragment.class) continue;
+            if (fragmentClass == null) continue;
 
             queue.offer(fragmentClass);
         }

@@ -32,11 +32,7 @@ import android.support.v4.app.NotificationCompat;
 import com.grarak.kerneladiutor.R;
 import com.grarak.kerneladiutor.activities.MainActivity;
 import com.grarak.kerneladiutor.database.Settings;
-import com.grarak.kerneladiutor.database.tools.customcontrols.Controls;
-import com.grarak.kerneladiutor.database.tools.profiles.Profiles;
 import com.grarak.kerneladiutor.fragments.ApplyOnBootFragment;
-import com.grarak.kerneladiutor.fragments.kernel.CPUHotplugFragment;
-import com.grarak.kerneladiutor.services.profile.Tile;
 import com.grarak.kerneladiutor.utils.AppSettings;
 import com.grarak.kerneladiutor.utils.NotificationId;
 import com.grarak.kerneladiutor.utils.Utils;
@@ -66,21 +62,14 @@ public class ApplyOnBoot {
     }
 
     public static boolean apply(ApplyOnBootService service, final ApplyOnBootListener listener) {
-        if (!AppSettings.getBoolean(ApplyOnBootFragment
-                .getAssignment(CPUHotplugFragment.class), false, service)) {
+        if (!AppSettings.getBoolean("cpuhotplug_onboot", false, service)) {
             AppSettings.resetCoreCtlMinCpusBig(service);
         }
 
         boolean enabled = false;
         final Settings settings = new Settings(service);
-        Controls controls = new Controls(service);
 
         final HashMap<String, Boolean> mCategoryEnabled = new HashMap<>();
-        final HashMap<String, String> mCustomControls = new HashMap<>();
-        final List<String> mProfiles = new ArrayList<>();
-
-        List<Profiles.ProfileItem> profiles = new Profiles(service).getAllProfiles();
-        Tile.publishProfileTile(profiles, service);
 
         for (Settings.SettingsItem item : settings.getAllSettings()) {
             if (!mCategoryEnabled.containsKey(item.getCategory())) {
@@ -92,21 +81,7 @@ public class ApplyOnBoot {
                 }
             }
         }
-        for (Controls.ControlItem item : controls.getAllControls()) {
-            if (item.isOnBootEnabled() && item.getArguments() != null) {
-                mCustomControls.put(item.getApply(), item.getArguments());
-            }
-        }
-        for (Profiles.ProfileItem profileItem : profiles) {
-            if (profileItem.isOnBootEnabled()) {
-                for (Profiles.ProfileItem.CommandItem commandItem : profileItem.getCommands()) {
-                    mProfiles.add(commandItem.getCommand());
-                }
-            }
-        }
 
-        final boolean initdEnabled = AppSettings.isInitdOnBoot(service);
-        enabled = enabled || mCustomControls.size() > 0 || mProfiles.size() > 0 || initdEnabled;
         if (!enabled) {
             return false;
         }
@@ -187,13 +162,6 @@ public class ApplyOnBoot {
                 }
                 RootUtils.SU su = new RootUtils.SU(true, TAG);
 
-                if (initdEnabled) {
-                    RootUtils.mount(true, "/system", su);
-                    su.runCommand("for i in `ls /system/etc/init.d`;do chmod 755 $i;done");
-                    su.runCommand("[ -d /system/etc/init.d ] && run-parts /system/etc/init.d");
-                    RootUtils.mount(false, "/system", su);
-                }
-
                 List<String> commands = new ArrayList<>();
                 for (Settings.SettingsItem item : settings.getAllSettings()) {
                     String category = item.getCategory();
@@ -226,42 +194,6 @@ public class ApplyOnBoot {
                     file.execute();
                 } else {
                     for (String command : commands) {
-                        synchronized (this) {
-                            su.runCommand(command);
-                        }
-                    }
-                }
-                for (String script : mCustomControls.keySet()) {
-                    RootFile file = new RootFile("/data/local/tmp/kerneladiutortmp.sh", su);
-                    file.mkdir();
-                    file.write(script, false);
-                    file.execute(mCustomControls.get(script));
-                }
-
-                List<String> profileCommands = new ArrayList<>();
-                for (String command : mProfiles) {
-                    CPUFreq.ApplyCpu applyCpu;
-                    if (command.startsWith("#")
-                            && ((applyCpu =
-                            new CPUFreq.ApplyCpu(command.substring(1))).toString() != null)) {
-                        synchronized (this) {
-                            profileCommands.addAll(getApplyCpu(applyCpu, su, service));
-                        }
-                    }
-                    profileCommands.add(command);
-                }
-
-                if (script) {
-                    StringBuilder s = new StringBuilder("#!/system/bin/sh\n\n");
-                    for (String command : profileCommands) {
-                        s.append(command).append("\n");
-                    }
-                    RootFile file = new RootFile("/data/local/tmp/kerneladiutortmp.sh", su);
-                    file.mkdir();
-                    file.write(s.toString(), false);
-                    file.execute();
-                } else {
-                    for (String command : profileCommands) {
                         synchronized (this) {
                             su.runCommand(command);
                         }

@@ -2,17 +2,17 @@
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:enabled="true"
-        android:icon="@drawable/ic_settings"
-        android:shortcutId="settings"
-        android:shortcutLongLabel="@string/open_settings"
-        android:shortcutShortLabel="@string/settings">
+        android:icon="@drawable/ic_cpu"
+        android:shortcutId="cpu"
+        android:shortcutLongLabel="@string/cpu"
+        android:shortcutShortLabel="@string/cpu">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetClass="com.grarak.kerneladiutor.activities.MainActivity"
             android:targetPackage="com.grarak.kerneladiutor">
             <extra
                 android:name="section"
-                android:value="com.grarak.kerneladiutor.fragments.other.SettingsFragment" />
+                android:value="com.grarak.kerneladiutor.fragments.kernel.CPUFragment" />
         </intent>
         <categories android:name="android.shortcut.conversation" />
     </shortcut>

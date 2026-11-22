@@ -32,10 +32,8 @@ import android.support.v7.widget.AppCompatEditText;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 
-import com.bumptech.glide.Glide;
 import com.grarak.kerneladiutor.R;
 import com.grarak.kerneladiutor.views.dialog.Dialog;
 
@@ -239,10 +237,6 @@ public class ViewUtils {
             dialog.setOnDismissListener(dismissListener);
         }
         return dialog;
-    }
-
-    public static void loadImagefromUrl(String url, ImageView imageView) {
-        Glide.with(imageView.getContext()).load(url).into(imageView);
     }
 
     public static Bitmap scaleDownBitmap(Bitmap bitmap, int maxWidth, int maxHeight) {

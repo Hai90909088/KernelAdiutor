@@ -32,33 +32,18 @@ import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.TextView;
 
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
-import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.security.ProviderInstaller;
 import com.grarak.kerneladiutor.BuildConfig;
 import com.grarak.kerneladiutor.R;
-import com.grarak.kerneladiutor.database.tools.profiles.Profiles;
-import com.grarak.kerneladiutor.services.profile.Tile;
 import com.grarak.kerneladiutor.utils.AppSettings;
 import com.grarak.kerneladiutor.utils.Device;
 import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
-import com.grarak.kerneladiutor.utils.kernel.battery.Battery;
 import com.grarak.kerneladiutor.utils.kernel.cpu.CPUBoost;
 import com.grarak.kerneladiutor.utils.kernel.cpu.CPUFreq;
 import com.grarak.kerneladiutor.utils.kernel.cpu.MSMPerformance;
 import com.grarak.kerneladiutor.utils.kernel.cpu.Temperature;
-import com.grarak.kerneladiutor.utils.kernel.cpuhotplug.Hotplug;
-import com.grarak.kerneladiutor.utils.kernel.cpuhotplug.QcomBcl;
-import com.grarak.kerneladiutor.utils.kernel.cpuvoltage.Voltage;
 import com.grarak.kerneladiutor.utils.kernel.gpu.GPU;
 import com.grarak.kerneladiutor.utils.kernel.io.IO;
-import com.grarak.kerneladiutor.utils.kernel.ksm.KSM;
-import com.grarak.kerneladiutor.utils.kernel.misc.Vibration;
-import com.grarak.kerneladiutor.utils.kernel.screen.Screen;
-import com.grarak.kerneladiutor.utils.kernel.sound.Sound;
-import com.grarak.kerneladiutor.utils.kernel.thermal.Thermal;
-import com.grarak.kerneladiutor.utils.kernel.wake.Wake;
 import com.grarak.kerneladiutor.utils.root.RootUtils;
 
 import java.io.File;
@@ -94,18 +79,7 @@ public class MainActivity extends BaseActivity {
         }
 
         if (savedInstanceState == null) {
-            /*
-             * Launch password activity when one is set,
-             * otherwise run {@link #CheckingTask}
-             */
-            String password;
-            if (!(password = AppSettings.getPassword(this)).isEmpty()) {
-                Intent intent = new Intent(this, SecurityActivity.class);
-                intent.putExtra(SecurityActivity.PASSWORD_INTENT, password);
-                startActivityForResult(intent, 1);
-            } else {
-                new CheckingTask(this).execute();
-            }
+            new CheckingTask(this).execute();
         }
     }
 
@@ -204,44 +178,17 @@ public class MainActivity extends BaseActivity {
             MainActivity activity = mRefActivity.get();
             if (activity == null) return;
 
-            Battery.getInstance(activity);
             CPUBoost.getInstance();
 
             // Assign core ctl min cpu
             CPUFreq.getInstance(activity);
 
             Device.CPUInfo.getInstance();
-            Device.Input.getInstance();
-            Device.MemInfo.getInstance();
-            Device.ROMInfo.getInstance();
-            Device.TrustZone.getInstance();
             GPU.supported();
-            Hotplug.supported();
             IO.getInstance();
-            KSM.getInstance();
             MSMPerformance.getInstance();
-            QcomBcl.supported();
-            Screen.supported();
-            Sound.getInstance();
             Temperature.getInstance(activity);
-            Thermal.supported();
-            Tile.publishProfileTile(new Profiles(activity).getAllProfiles(), activity);
-            Vibration.getInstance();
-            Voltage.getInstance();
-            Wake.supported();
 
-            try {
-                ProviderInstaller.installIfNeeded(activity);
-            } catch (GooglePlayServicesNotAvailableException
-                    | GooglePlayServicesRepairableException e) {
-                e.printStackTrace();
-            }
-
-
-            Log.crashlyticsI(TAG, "Build Display ID: "
-                    + Device.getBuildDisplayId());
-            Log.crashlyticsI(TAG, "ROM: "
-                    + Device.ROMInfo.getInstance().getVersion());
             Log.crashlyticsI(TAG, "Kernel version: "
                     + Device.getKernelVersion(true));
             Log.crashlyticsI(TAG, "Board: " +
