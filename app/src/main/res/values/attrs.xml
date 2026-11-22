@@ -20,4 +20,10 @@
     <attr name="native_express_id" format="string" />
     <attr name="dim_dialog_background" format="color" />
 
+    <declare-styleable name="DiscreteSeekBar">
+        <attr name="dsb_indicatorPopupEnabled" format="boolean" />
+        <attr name="dsb_progressColor" format="color|reference" />
+        <attr name="dsb_allowTrackClickToDrag" format="boolean" />
+    </declare-styleable>
+
 </resources>

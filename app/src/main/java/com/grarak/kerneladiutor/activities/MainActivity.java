@@ -32,9 +32,6 @@ import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.TextView;
 
-import com.crashlytics.android.answers.Answers;
-import com.crashlytics.android.answers.CustomEvent;
-import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.security.ProviderInstaller;
@@ -240,11 +237,6 @@ public class MainActivity extends BaseActivity {
                 e.printStackTrace();
             }
 
-            if (!BuildConfig.DEBUG) {
-                // Send SoC type to analytics to collect stats
-                Answers.getInstance().logCustom(new CustomEvent("SoC")
-                        .putCustomAttribute("type", Device.getBoard()));
-            }
 
             Log.crashlyticsI(TAG, "Build Display ID: "
                     + Device.getBuildDisplayId());
@@ -307,16 +299,8 @@ public class MainActivity extends BaseActivity {
                 activity.startActivity(intent);
                 activity.finish();
 
-                if (!BuildConfig.DEBUG) {
-                    // Send problem to analytics to collect stats
-                    Answers.getInstance().logCustom(new CustomEvent("Can't access")
-                            .putCustomAttribute("no_found", mHasRoot ? "no busybox" : "no root"));
-                }
                 return;
             }
-
-            // Initialize Google Ads
-            MobileAds.initialize(activity, "ca-app-pub-1851546461606210~9501142287");
 
             // Execute another AsyncTask for license checking
             new LoadingTask(activity).execute();
@@ -349,9 +333,6 @@ public class MainActivity extends BaseActivity {
                         "com.grarak.kerneladiutordonate", 0);
                 mPackageInfo = packageManager.getPackageInfo(
                         "com.grarak.kerneladiutordonate", 0);
-                if (BuildConfig.DEBUG) {
-                    Utils.DONATED = false;
-                }
             } catch (PackageManager.NameNotFoundException ignored) {
             }
         }
@@ -414,10 +395,6 @@ public class MainActivity extends BaseActivity {
             } else if (donationValid) {
                 activity.launch(1);
             } else {
-                if (mPatched && !BuildConfig.DEBUG) {
-                    Answers.getInstance().logCustom(new CustomEvent("Pirated")
-                            .putCustomAttribute("android_id", Utils.getAndroidId(activity)));
-                }
                 activity.launch(mPatched ? 3 : -1);
             }
         }

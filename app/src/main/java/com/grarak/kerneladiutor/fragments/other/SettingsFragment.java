@@ -180,7 +180,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
             if (fragmentClass != null && fragmentClass != SettingsFragment.class) {
                 SwitchPreferenceCompat switchPreference = new SwitchPreferenceCompat(
-                        new ContextThemeWrapper(getActivity(), R.style.Preference_SwitchPreferenceCompat_Material));
+                        new ContextThemeWrapper(getActivity(),
+                                android.support.v7.preference.R.style.Preference_SwitchPreferenceCompat_Material));
                 switchPreference.setSummary(getString(id));
                 switchPreference.setKey(fragmentClass.getSimpleName() + "_enabled");
                 switchPreference.setChecked(AppSettings.isFragmentEnabled(fragmentClass, getActivity()));

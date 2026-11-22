@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.grarak.kerneladiutor">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.ACCESS_SUPERUSER" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -29,9 +28,6 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Default.Pink">
-        <meta-data
-            android:name="io.fabric.ApiKey"
-            android:value="d89b7ebb31b3bb0ca514a4171c6af37c7c9579c9" />
 
         <activity android:name=".activities.StartActivity">
             <intent-filter>

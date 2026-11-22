@@ -86,7 +86,6 @@ import com.grarak.kerneladiutor.utils.Device;
 import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
 import com.grarak.kerneladiutor.utils.ViewUtils;
-import com.grarak.kerneladiutor.utils.WebpageReader;
 import com.grarak.kerneladiutor.utils.kernel.battery.Battery;
 import com.grarak.kerneladiutor.utils.kernel.cpuhotplug.Hotplug;
 import com.grarak.kerneladiutor.utils.kernel.cpuvoltage.Voltage;
@@ -103,7 +102,6 @@ import com.grarak.kerneladiutor.utils.kernel.wake.Wake;
 import com.grarak.kerneladiutor.utils.root.RootUtils;
 import com.grarak.kerneladiutor.utils.tools.Backup;
 import com.grarak.kerneladiutor.utils.tools.SupportedDownloads;
-import com.grarak.kerneladiutor.views.AdLayout;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -129,9 +127,6 @@ public class NavigationActivity extends BaseActivity
 
     private int mSelection;
     private boolean mLicenseDialog = true;
-
-    private WebpageReader mAdsFetcher;
-    private boolean mFetchingAds;
 
     @Override
     protected boolean setStatusBarColor() {
@@ -296,7 +291,6 @@ public class NavigationActivity extends BaseActivity
         if (savedInstanceState != null) {
             mSelection = savedInstanceState.getInt(INTENT_SECTION);
             mLicenseDialog = savedInstanceState.getBoolean("license");
-            mFetchingAds = savedInstanceState.getBoolean("fetching_ads");
         }
 
         appendFragments(false);
@@ -319,28 +313,6 @@ public class NavigationActivity extends BaseActivity
 
         if (AppSettings.isDataSharing(this)) {
             startService(new Intent(this, Monitor.class));
-        }
-
-        if (!mFetchingAds && !Utils.DONATED) {
-            mFetchingAds = true;
-            mAdsFetcher = new WebpageReader(this, new WebpageReader.WebpageListener() {
-                @Override
-                public void onSuccess(String url, String raw, CharSequence html) {
-                    AdLayout.GHAds ghAds = new AdLayout.GHAds(raw);
-                    if (ghAds.readable()) {
-                        ghAds.cache(NavigationActivity.this);
-                        Fragment fragment = getFragment(mSelection);
-                        if (fragment instanceof RecyclerViewFragment) {
-                            ((RecyclerViewFragment) fragment).ghAdReady();
-                        }
-                    }
-                }
-
-                @Override
-                public void onFailure(String url) {
-                }
-            });
-            mAdsFetcher.get(AdLayout.ADS_FETCH);
         }
     }
 
@@ -482,9 +454,6 @@ public class NavigationActivity extends BaseActivity
             }
         }
         fragmentTransaction.commitAllowingStateLoss();
-        if (mAdsFetcher != null) {
-            mAdsFetcher.cancel();
-        }
         RootUtils.closeSU();
     }
 
@@ -495,7 +464,6 @@ public class NavigationActivity extends BaseActivity
         outState.putParcelableArrayList("fragments", mFragments);
         outState.putInt(INTENT_SECTION, mSelection);
         outState.putBoolean("license", mLicenseDialog);
-        outState.putBoolean("fetching_ads", mFetchingAds);
     }
 
     @Override

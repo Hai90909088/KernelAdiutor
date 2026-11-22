@@ -192,16 +192,7 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         mRecyclerView.setLayoutManager(mLayoutManager = getLayoutManager());
         mRecyclerView.setHasFixedSize(true);
 
-        if (!Utils.DONATED
-                && !showTopFab()
-                && !isForeground()
-                && getActivity() instanceof NavigationActivity
-                && showAd()
-                && mAdView == null) {
-            mAdView = new AdView();
-        } else {
-            mAdView = null;
-        }
+        mAdView = null;
 
         mTopFab.setOnClickListener(v -> onTopFabClick());
         {
