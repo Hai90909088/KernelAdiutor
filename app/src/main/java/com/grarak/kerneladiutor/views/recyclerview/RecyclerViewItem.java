@@ -83,10 +83,9 @@ public abstract class RecyclerViewItem {
     }
 
     private void fullSpan(boolean fullspan) {
-        if (mView != null) {
+        if (mView != null && mView.getLayoutParams() instanceof StaggeredGridLayoutManager.LayoutParams) {
             StaggeredGridLayoutManager.LayoutParams layoutParams =
-                    new StaggeredGridLayoutManager.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT);
+                    (StaggeredGridLayoutManager.LayoutParams) mView.getLayoutParams();
             layoutParams.setFullSpan(fullspan);
             mView.setLayoutParams(layoutParams);
         }

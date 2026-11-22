@@ -58,8 +58,14 @@ import com.grarak.kerneladiutor.fragments.kernel.CPUFragment;
 import com.grarak.kerneladiutor.fragments.kernel.GPUFragment;
 import com.grarak.kerneladiutor.fragments.kernel.IOFragment;
 import com.grarak.kerneladiutor.utils.AppSettings;
+import com.grarak.kerneladiutor.utils.Device;
+import com.grarak.kerneladiutor.utils.Log;
 import com.grarak.kerneladiutor.utils.Utils;
 import com.grarak.kerneladiutor.utils.ViewUtils;
+import com.grarak.kerneladiutor.utils.kernel.cpu.CPUBoost;
+import com.grarak.kerneladiutor.utils.kernel.cpu.CPUFreq;
+import com.grarak.kerneladiutor.utils.kernel.cpu.MSMPerformance;
+import com.grarak.kerneladiutor.utils.kernel.cpu.Temperature;
 import com.grarak.kerneladiutor.utils.kernel.gpu.GPU;
 import com.grarak.kerneladiutor.utils.kernel.io.IO;
 import com.grarak.kerneladiutor.utils.root.RootUtils;
@@ -113,6 +119,8 @@ public class NavigationActivity extends BaseActivity
     private static class FragmentLoader extends AsyncTask<Void, Void, Void> {
 
         private WeakReference<NavigationActivity> mRefActivity;
+        private boolean mHasRoot;
+        private boolean mHasBusybox;
 
         private FragmentLoader(NavigationActivity activity) {
             mRefActivity = new WeakReference<>(activity);
@@ -122,7 +130,27 @@ public class NavigationActivity extends BaseActivity
         protected Void doInBackground(Void... voids) {
             NavigationActivity activity = mRefActivity.get();
             if (activity == null) return null;
-            activity.initFragments();
+
+            mHasRoot = RootUtils.rootAccess();
+            if (mHasRoot) {
+                mHasBusybox = RootUtils.busyboxInstalled();
+                if (mHasBusybox) {
+                    CPUBoost.getInstance();
+                    CPUFreq.getInstance(activity);
+                    Device.CPUInfo.getInstance();
+                    GPU.supported();
+                    IO.getInstance();
+                    MSMPerformance.getInstance();
+                    Temperature.getInstance(activity);
+
+                    Log.crashlyticsI(NavigationActivity.class.getSimpleName(), "Kernel version: "
+                            + Device.getKernelVersion(true));
+                    Log.crashlyticsI(NavigationActivity.class.getSimpleName(), "Board: "
+                            + Device.getBoard());
+
+                    activity.initFragments();
+                }
+            }
             return null;
         }
 
@@ -130,7 +158,20 @@ public class NavigationActivity extends BaseActivity
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             NavigationActivity activity = mRefActivity.get();
-            if (activity == null) return;
+            if (activity == null || activity.isFinishing()) return;
+
+            if (!mHasRoot || !mHasBusybox) {
+                Intent intent = new Intent(activity, TextActivity.class);
+                intent.putExtra(TextActivity.MESSAGE_INTENT, activity.getString(mHasRoot ?
+                        R.string.no_busybox : R.string.no_root));
+                intent.putExtra(TextActivity.SUMMARY_INTENT,
+                        mHasRoot ? "https://play.google.com/store/apps/details?id=stericson.busybox" :
+                                "https://www.google.com/search?site=&source=hp&q=root+"
+                                        + Device.getVendor() + "+" + Device.getModel());
+                activity.startActivity(intent);
+                activity.finish();
+                return;
+            }
             activity.init(null);
         }
     }
@@ -346,7 +387,7 @@ public class NavigationActivity extends BaseActivity
         for (int i = 0; i < 4; i++) {
             NavigationFragment fragment = findNavigationFragmentByClass(queue.poll());
             if (fragment == null || fragment.mFragmentClass == null) continue;
-            Intent intent = new Intent(this, MainActivity.class);
+            Intent intent = new Intent(this, NavigationActivity.class);
             intent.setAction(Intent.ACTION_VIEW);
             intent.putExtra(INTENT_SECTION, fragment.mFragmentClass.getCanonicalName());
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

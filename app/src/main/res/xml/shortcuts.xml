@@ -8,7 +8,7 @@
         android:shortcutShortLabel="@string/cpu">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="com.grarak.kerneladiutor.activities.MainActivity"
+            android:targetClass="com.grarak.kerneladiutor.activities.NavigationActivity"
             android:targetPackage="com.grarak.kerneladiutor">
             <extra
                 android:name="section"

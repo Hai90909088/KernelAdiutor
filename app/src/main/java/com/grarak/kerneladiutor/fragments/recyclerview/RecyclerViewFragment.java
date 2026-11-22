@@ -86,6 +86,8 @@ public abstract class RecyclerViewFragment extends BaseFragment {
 
     private View mRootView;
 
+    private ViewGroup mFixedHeaderContainer;
+    private RecyclerViewItem mPinnedHeader;
     private List<RecyclerViewItem> mItems = new ArrayList<>();
     private RecyclerView mRecyclerView;
     private RecyclerView.LayoutManager mLayoutManager;
@@ -135,6 +137,7 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         mRootView = inflater.inflate(R.layout.fragment_recyclerview, container, false);
         mHandler = new Handler();
 
+        mFixedHeaderContainer = mRootView.findViewById(R.id.fixed_header_container);
         mRecyclerView = mRootView.findViewById(R.id.recyclerview);
 
         if (mViewPagerFragments != null) {
@@ -228,12 +231,13 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             mDialogParent.setOnClickListener(v -> dismissDialog(false));
         }
 
-        if (itemsSize() == 0) {
+        if (itemsSize() == 0 && mPinnedHeader == null) {
             mLoader = new LoaderTask(this, savedInstanceState);
             mLoader.execute();
         } else {
             showProgress();
             init();
+            bindPinnedHeader();
             hideProgress();
             postInit();
             adjustScrollPosition();
@@ -289,6 +293,7 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             for (RecyclerViewItem item : recyclerViewItems) {
                 fragment.addItem(item);
             }
+            fragment.bindPinnedHeader();
             fragment.hideProgress();
             fragment.postInit();
             if (mSavedInstanceState == null && fragment.showViewPager() && !fragment.hideBanner()) {
@@ -375,6 +380,10 @@ public abstract class RecyclerViewFragment extends BaseFragment {
     public void onViewFinished() {
         super.onViewFinished();
         if (showViewPager() && !hideBanner()) {
+            int bannerHeight = Math.round(getResources().getDimension(R.dimen.banner_default_height));
+            mRecyclerView.setPadding(mRecyclerView.getPaddingLeft(), bannerHeight,
+                    mRecyclerView.getPaddingRight(), mRecyclerView.getPaddingBottom());
+            mRecyclerView.setClipToPadding(false);
             mViewPager.setAdapter(mViewPagerAdapter = new ViewPagerAdapter(getChildFragmentManager(),
                     mViewPagerFragments));
             mCirclePageIndicator.setViewPager(mViewPager);
@@ -403,6 +412,25 @@ public abstract class RecyclerViewFragment extends BaseFragment {
     }
 
     protected void init() {
+    }
+
+    protected void setPinnedHeader(RecyclerViewItem item) {
+        mPinnedHeader = item;
+    }
+
+    private void bindPinnedHeader() {
+        if (mFixedHeaderContainer == null || getActivity() == null) return;
+        mFixedHeaderContainer.removeAllViews();
+        if (mPinnedHeader != null) {
+            View headerView = LayoutInflater.from(getActivity())
+                    .inflate(mPinnedHeader.getLayoutRes(), mFixedHeaderContainer, false);
+            mFixedHeaderContainer.addView(headerView);
+            mPinnedHeader.onCreateView(headerView);
+            mPinnedHeader.onRecyclerViewCreate(getActivity());
+            mFixedHeaderContainer.setVisibility(View.VISIBLE);
+        } else {
+            mFixedHeaderContainer.setVisibility(View.GONE);
+        }
     }
 
     protected void postInit() {
@@ -468,6 +496,11 @@ public abstract class RecyclerViewFragment extends BaseFragment {
     }
 
     protected void clearItems() {
+        mPinnedHeader = null;
+        if (mFixedHeaderContainer != null) {
+            mFixedHeaderContainer.removeAllViews();
+            mFixedHeaderContainer.setVisibility(View.GONE);
+        }
         mItems.clear();
         if (mRecyclerViewAdapter != null) {
             mRecyclerViewAdapter.notifyDataSetChanged();
@@ -634,6 +667,9 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             getActivity().runOnUiThread(() -> {
                 if (isAdded()) {
                     mProgress.setVisibility(View.VISIBLE);
+                    if (mFixedHeaderContainer != null) {
+                        mFixedHeaderContainer.setVisibility(View.GONE);
+                    }
                     mRecyclerView.setVisibility(View.INVISIBLE);
                     if (mTopFab != null && showTopFab()) {
                         mTopFab.hide();
@@ -648,6 +684,9 @@ public abstract class RecyclerViewFragment extends BaseFragment {
 
     protected void hideProgress() {
         mProgress.setVisibility(View.GONE);
+        if (mFixedHeaderContainer != null) {
+            mFixedHeaderContainer.setVisibility(mPinnedHeader != null ? View.VISIBLE : View.GONE);
+        }
         mRecyclerView.setVisibility(View.VISIBLE);
         mViewPagerParent.setVisibility(View.VISIBLE);
         if (mTopFab != null && showTopFab()) {
@@ -910,6 +949,9 @@ public abstract class RecyclerViewFragment extends BaseFragment {
             mPoolExecutor.scheduleWithFixedDelay(mScheduler, 1,
                     1, TimeUnit.SECONDS);
         }
+        if (mPinnedHeader != null) {
+            mPinnedHeader.onResume();
+        }
         for (RecyclerViewItem item : mItems) {
             item.onResume();
         }
@@ -921,6 +963,9 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         if (mPoolExecutor != null) {
             mPoolExecutor.shutdown();
             mPoolExecutor = null;
+        }
+        if (mPinnedHeader != null) {
+            mPinnedHeader.onPause();
         }
         for (RecyclerViewItem item : mItems) {
             item.onPause();
@@ -976,6 +1021,10 @@ public abstract class RecyclerViewFragment extends BaseFragment {
         if (mDialogLoader != null) {
             mDialogLoader.cancel(true);
             mDialogLoader = null;
+        }
+        if (mPinnedHeader != null) {
+            mPinnedHeader.onDestroy();
+            mPinnedHeader = null;
         }
         for (RecyclerViewItem item : mItems) {
             item.onDestroy();

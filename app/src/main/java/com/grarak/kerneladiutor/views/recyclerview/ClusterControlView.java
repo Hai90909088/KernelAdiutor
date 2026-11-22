@@ -2,7 +2,9 @@ package com.grarak.kerneladiutor.views.recyclerview;
 
 import android.app.Activity;
 import android.content.Context;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -182,6 +184,18 @@ public class ClusterControlView extends RecyclerViewItem {
                 applyFreqIndex(false, seekBar.getProgress());
             }
         });
+
+        View.OnTouchListener seekBarTouchListener = (v, event) -> {
+            ViewParent parent = v.getParent();
+            if (parent != null) {
+                int action = event.getActionMasked();
+                parent.requestDisallowInterceptTouchEvent(
+                        action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE);
+            }
+            return false;
+        };
+        mMinSeekBar.setOnTouchListener(seekBarTouchListener);
+        mMaxSeekBar.setOnTouchListener(seekBarTouchListener);
 
         super.onCreateView(view);
         setFullSpan(true);

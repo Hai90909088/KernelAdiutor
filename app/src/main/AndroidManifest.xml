@@ -30,7 +30,6 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
-        <activity android:name=".activities.MainActivity" />
         <activity android:name=".activities.NavigationActivity" />
         <activity android:name=".activities.TextActivity" />
         <activity

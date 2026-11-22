@@ -4,14 +4,14 @@
     android:layout_height="wrap_content"
     android:layout_marginLeft="8dp"
     android:layout_marginRight="8dp"
-    android:layout_marginTop="4dp"
-    android:layout_marginBottom="4dp"
+    android:layout_marginTop="3dp"
+    android:layout_marginBottom="3dp"
     android:background="@drawable/bg_dark_card"
     android:orientation="vertical"
     android:paddingLeft="10dp"
     android:paddingRight="10dp"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp">
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
             android:layout_width="68dp"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:gravity="center_vertical|center_horizontal"
             android:orientation="vertical"
             android:paddingRight="4dp">
@@ -53,7 +53,7 @@
         <LinearLayout
             android:id="@+id/governor_pill"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:layout_marginLeft="6dp"
             android:layout_marginRight="6dp"
             android:layout_weight="1"
@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
             android:gravity="center"
-            android:minHeight="48dp"
+            android:minHeight="38dp"
             android:orientation="vertical"
             android:paddingLeft="4dp">
 
@@ -117,8 +117,8 @@
     <LinearLayout
         android:id="@+id/min_row"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="6dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -133,7 +133,7 @@
         <LinearLayout
             android:id="@+id/min_pill"
             android:layout_width="96dp"
-            android:layout_height="38dp"
+            android:layout_height="34dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -163,7 +163,7 @@
         <TextView
             android:id="@+id/min_minus"
             android:layout_width="34dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="—"
@@ -185,7 +185,7 @@
         <TextView
             android:id="@+id/min_plus"
             android:layout_width="34dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="+"
@@ -197,8 +197,8 @@
     <LinearLayout
         android:id="@+id/max_row"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="4dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="0dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -213,7 +213,7 @@
         <LinearLayout
             android:id="@+id/max_pill"
             android:layout_width="96dp"
-            android:layout_height="38dp"
+            android:layout_height="34dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -243,7 +243,7 @@
         <TextView
             android:id="@+id/max_minus"
             android:layout_width="34dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="—"
@@ -265,7 +265,7 @@
         <TextView
             android:id="@+id/max_plus"
             android:layout_width="34dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="+"

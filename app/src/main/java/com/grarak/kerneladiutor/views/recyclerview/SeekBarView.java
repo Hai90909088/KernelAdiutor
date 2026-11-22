@@ -20,7 +20,9 @@
 package com.grarak.kerneladiutor.views.recyclerview;
 
 import android.support.v7.widget.AppCompatTextView;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 
 import com.grarak.kerneladiutor.R;
 import com.grarak.kerneladiutor.utils.Log;
@@ -118,6 +120,15 @@ public class SeekBarView extends RecyclerViewItem {
             }
         });
         mSeekBar.setFocusable(false);
+        mSeekBar.setOnTouchListener((v, event) -> {
+            ViewParent parent = v.getParent();
+            if (parent != null) {
+                int action = event.getActionMasked();
+                parent.requestDisallowInterceptTouchEvent(
+                        action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE);
+            }
+            return false;
+        });
 
         super.onCreateView(view);
     }

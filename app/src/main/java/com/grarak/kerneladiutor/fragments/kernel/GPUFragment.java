@@ -107,7 +107,9 @@ public class GPUFragment extends RecyclerViewFragment {
         }
         mDashboard.setRows(rows);
         if (mGPUFreq.hasBusy() || !rows.isEmpty()) {
-            items.add(mDashboard);
+            setPinnedHeader(mDashboard);
+        } else {
+            setPinnedHeader(null);
         }
 
         if (mGPUFreq.hasGovernor() || mGPUFreq.hasMaxFreq() || mGPUFreq.hasMinFreq()) {

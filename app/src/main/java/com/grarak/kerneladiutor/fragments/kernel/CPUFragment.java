@@ -114,9 +114,6 @@ public class CPUFragment extends RecyclerViewFragment {
         if (Misc.hasMcPowerSaving()) {
             mcPowerSavingInit(items);
         }
-        if (Misc.hasPowerSavingWq()) {
-            powerSavingWqInit(items);
-        }
         if (Misc.hasCFSScheduler()) {
             cfsSchedulerInit(items);
         }
@@ -151,7 +148,7 @@ public class CPUFragment extends RecyclerViewFragment {
             barRows.add(new CpuDashboardView.BarRow(label, pct, val));
         }
         mDashboard.setRows(barRows);
-        items.add(mDashboard);
+        setPinnedHeader(mDashboard);
 
         CardView screenOffCard = new CardView();
         screenOffCard.setTitle(getString(R.string.cpu_max_screen_off_freq));
@@ -302,16 +299,6 @@ public class CPUFragment extends RecyclerViewFragment {
                 -> Misc.setMcPowerSaving(position, getActivity()));
 
         items.add(mcPowerSaving);
-    }
-
-    private void powerSavingWqInit(List<RecyclerViewItem> items) {
-        SwitchView powerSavingWq = new SwitchView();
-        powerSavingWq.setSummary(getString(R.string.power_saving_wq));
-        powerSavingWq.setChecked(Misc.isPowerSavingWqEnabled());
-        powerSavingWq.addOnSwitchListener((switchView, isChecked)
-                -> Misc.enablePowerSavingWq(isChecked, getActivity()));
-
-        items.add(powerSavingWq);
     }
 
     private void cfsSchedulerInit(List<RecyclerViewItem> items) {

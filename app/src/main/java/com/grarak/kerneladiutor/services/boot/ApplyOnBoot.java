@@ -30,7 +30,7 @@ import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 
 import com.grarak.kerneladiutor.R;
-import com.grarak.kerneladiutor.activities.MainActivity;
+import com.grarak.kerneladiutor.activities.NavigationActivity;
 import com.grarak.kerneladiutor.database.Settings;
 import com.grarak.kerneladiutor.fragments.ApplyOnBootFragment;
 import com.grarak.kerneladiutor.utils.AppSettings;
@@ -96,7 +96,7 @@ public class ApplyOnBoot {
         PendingIntent cancelIntent = PendingIntent.getBroadcast(service, 1,
                 new Intent(service, CancelReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Intent launchIntent = new Intent(service, MainActivity.class);
+        Intent launchIntent = new Intent(service, NavigationActivity.class);
         PendingIntent contentIntent = PendingIntent.getActivity(service, 0, launchIntent, 0);
 
         final NotificationCompat.Builder builder =
