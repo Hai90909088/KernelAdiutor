@@ -2,14 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginLeft="8dp"
-    android:layout_marginRight="8dp"
+    android:layout_marginLeft="2dp"
+    android:layout_marginRight="2dp"
     android:layout_marginTop="3dp"
     android:layout_marginBottom="3dp"
     android:background="@drawable/bg_dark_card"
     android:orientation="vertical"
-    android:paddingLeft="10dp"
-    android:paddingRight="10dp"
+    android:paddingLeft="6dp"
+    android:paddingRight="6dp"
     android:paddingTop="6dp"
     android:paddingBottom="6dp">
 
@@ -21,13 +21,13 @@
 
         <LinearLayout
             android:id="@+id/tunables_btn"
-            android:layout_width="68dp"
+            android:layout_width="56dp"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
             android:minHeight="38dp"
             android:gravity="center_vertical|center_horizontal"
             android:orientation="vertical"
-            android:paddingRight="4dp">
+            android:paddingRight="2dp">
 
             <TextView
                 android:id="@+id/cluster_title"
@@ -54,14 +54,14 @@
             android:id="@+id/governor_pill"
             android:layout_width="0dp"
             android:layout_height="36dp"
-            android:layout_marginLeft="6dp"
-            android:layout_marginRight="6dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
             android:layout_weight="1"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingLeft="14dp"
-            android:paddingRight="12dp">
+            android:paddingLeft="12dp"
+            android:paddingRight="10dp">
 
             <TextView
                 android:id="@+id/governor_text"
@@ -85,13 +85,13 @@
 
         <LinearLayout
             android:id="@+id/cores_btn"
-            android:layout_width="58dp"
+            android:layout_width="52dp"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
             android:gravity="center"
             android:minHeight="38dp"
             android:orientation="vertical"
-            android:paddingLeft="4dp">
+            android:paddingLeft="2dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -119,26 +119,29 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:layout_marginTop="2dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="64dp"
+            android:layout_width="54dp"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
             android:maxLines="1"
             android:text="@string/cpu_min_short"
             android:textColor="@color/cyan_accent"
-            android:textSize="12.5sp" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:id="@+id/min_pill"
-            android:layout_width="96dp"
+            android:layout_width="78dp"
             android:layout_height="34dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingLeft="10dp"
-            android:paddingRight="8dp">
+            android:paddingLeft="7dp"
+            android:paddingRight="6dp">
 
             <TextView
                 android:id="@+id/min_text"
@@ -150,25 +153,25 @@
                 android:maxLines="1"
                 android:text="@string/unknown"
                 android:textColor="@color/white"
-                android:textSize="12.5sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="▼"
                 android:textColor="@color/white"
-                android:textSize="10sp" />
+                android:textSize="9.5sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/min_minus"
-            android:layout_width="34dp"
+            android:layout_width="24dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="—"
             android:textColor="@color/white"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <SeekBar
@@ -176,7 +179,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:paddingStart="6dp"
             android:paddingLeft="6dp"
+            android:paddingEnd="6dp"
             android:paddingRight="6dp"
             android:progressDrawable="@drawable/seekbar_cyan_track"
             android:splitTrack="false"
@@ -184,13 +189,13 @@
 
         <TextView
             android:id="@+id/min_plus"
-            android:layout_width="34dp"
+            android:layout_width="24dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="+"
             android:textColor="@color/white"
-            android:textSize="20sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -199,26 +204,29 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:layout_marginTop="0dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="64dp"
+            android:layout_width="54dp"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
             android:maxLines="1"
             android:text="@string/cpu_max_short"
             android:textColor="@color/cyan_accent"
-            android:textSize="12.5sp" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:id="@+id/max_pill"
-            android:layout_width="96dp"
+            android:layout_width="78dp"
             android:layout_height="34dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingLeft="10dp"
-            android:paddingRight="8dp">
+            android:paddingLeft="7dp"
+            android:paddingRight="6dp">
 
             <TextView
                 android:id="@+id/max_text"
@@ -230,25 +238,25 @@
                 android:maxLines="1"
                 android:text="@string/unknown"
                 android:textColor="@color/white"
-                android:textSize="12.5sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="▼"
                 android:textColor="@color/white"
-                android:textSize="10sp" />
+                android:textSize="9.5sp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/max_minus"
-            android:layout_width="34dp"
+            android:layout_width="24dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="—"
             android:textColor="@color/white"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <SeekBar
@@ -256,7 +264,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:paddingStart="6dp"
             android:paddingLeft="6dp"
+            android:paddingEnd="6dp"
             android:paddingRight="6dp"
             android:progressDrawable="@drawable/seekbar_cyan_track"
             android:splitTrack="false"
@@ -264,13 +274,13 @@
 
         <TextView
             android:id="@+id/max_plus"
-            android:layout_width="34dp"
+            android:layout_width="24dp"
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:text="+"
             android:textColor="@color/white"
-            android:textSize="20sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>
