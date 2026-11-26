@@ -143,21 +143,10 @@ public class GPUFragment extends RecyclerViewFragment {
                     freqLabels.add(ClusterControlView.formatFreqHz(freq, offset));
                 }
                 mGpuControl.setFreqLabels(freqLabels);
-                mGpuControl.setHasMin(mGPUFreq.hasMinFreq());
-                mGpuControl.setHasMax(mGPUFreq.hasMaxFreq());
-                if (mGPUFreq.hasMinFreq()) {
-                    mGpuControl.setMinIndex(freqs.indexOf(mGPUFreq.getMinFreq()));
-                    mGpuControl.setOnMinFreqSelectedListener(idx ->
-                            mGPUFreq.setMinFreq(freqs.get(idx), getActivity()));
-                }
-                if (mGPUFreq.hasMaxFreq()) {
-                    mGpuControl.setMaxIndex(freqs.indexOf(mGPUFreq.getMaxFreq()));
-                    mGpuControl.setOnMaxFreqSelectedListener(idx ->
-                            mGPUFreq.setMaxFreq(freqs.get(idx), getActivity()));
-                }
-            } else {
-                mGpuControl.setHasMin(false);
-                mGpuControl.setHasMax(false);
+                int maxF = mGPUFreq.hasMaxFreq() ? mGPUFreq.getMaxFreq() : mGPUFreq.getCurFreq();
+                mGpuControl.setFreqIndex(freqs.indexOf(maxF));
+                mGpuControl.setOnFreqSelectedListener(idx ->
+                        mGPUFreq.setMaxFreq(freqs.get(idx), getActivity()));
             }
 
             items.add(mGpuControl);

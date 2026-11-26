@@ -4,8 +4,8 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
     <TextView
         android:id="@+id/bar_label"
@@ -18,7 +18,7 @@
 
     <FrameLayout
         android:layout_width="0dp"
-        android:layout_height="15dp"
+        android:layout_height="17dp"
         android:layout_weight="1">
 
         <ProgressBar

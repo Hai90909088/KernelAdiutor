@@ -40,7 +40,7 @@
       width: 100%;
       max-width: 440px;
       height: 100vh;
-      max-height: 860px;
+      max-height: 900px;
       background: var(--amoled-bg);
       display: flex;
       flex-direction: column;
@@ -122,7 +122,7 @@
     }
 
     .tabs {
-      height: 42px;
+      height: 44px;
       background: var(--toolbar-bg);
       display: flex;
       align-items: stretch;
@@ -169,18 +169,18 @@
     }
 
     .fixed-header {
-      padding: 6px 2px 2px;
+      padding: 8px 1px 6px;
       flex-shrink: 0;
     }
 
     .overall-bar {
-      height: 20px;
+      height: 22px;
       border-radius: 5px;
       background: var(--cyan-track);
       border: 1px solid var(--cyan-track-border);
       position: relative;
       overflow: hidden;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .bar-fill {
@@ -204,15 +204,15 @@
     .bars-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 4px 6px;
+      border-radius: 12px;
+      padding: 6px 8px;
     }
 
     .bar-row {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 2px 0;
+      padding: 4px 0;
     }
 
     .bar-row-name {
@@ -224,7 +224,7 @@
 
     .bar-track {
       flex: 1;
-      height: 15px;
+      height: 17px;
       border-radius: 4px;
       background: var(--cyan-track);
       border: 1px solid var(--cyan-track-border);
@@ -245,25 +245,27 @@
     .content-list {
       flex: 1;
       overflow-y: auto;
-      padding: 2px 2px 8px;
+      padding: 2px 1px 10px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .cluster-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 6px 6px;
+      border-radius: 12px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
     }
 
     .cluster-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 4px;
-      min-height: 36px;
+      gap: 6px;
+      min-height: 40px;
     }
 
     .cluster-id {
@@ -272,7 +274,7 @@
     }
 
     .cluster-name {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 700;
     }
 
@@ -284,12 +286,12 @@
 
     .pill-select {
       background: var(--pill-bg);
-      border: 1px solid var(--pill-border);
+      border: 1.5px solid var(--pill-border);
       border-radius: 999px;
       color: var(--text);
       font-size: 13px;
       height: 34px;
-      padding: 0 12px;
+      padding: 0 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -301,8 +303,7 @@
       height: 36px;
     }
 
-    .pill-gov select,
-    .pill-freq select {
+    .pill-gov select {
       background: transparent;
       border: none;
       color: var(--text);
@@ -315,49 +316,85 @@
     }
 
     .pill-gov select option,
-    .pill-freq select option {
+    .freq-dropdown select option {
       background: #0e141b;
       color: #ffffff;
     }
 
     .cores-box {
-      width: 52px;
+      width: 54px;
       text-align: center;
       font-size: 12px;
       line-height: 1.25;
     }
 
-    .freq-row {
+    .freq-selector-row {
       display: flex;
       align-items: center;
-      height: 40px;
-      gap: 2px;
+      gap: 10px;
+      margin-top: 10px;
     }
 
     .freq-label {
-      width: 54px;
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--cyan);
       flex-shrink: 0;
       white-space: nowrap;
     }
 
     .pill-freq {
-      width: 78px;
-      padding: 0 7px;
-      flex-shrink: 0;
-      font-size: 12px;
+      flex: 1;
+      min-width: 0;
+      padding: 0 4px 0 12px;
+      font-size: 13px;
       font-variant-numeric: tabular-nums;
+      position: relative;
+    }
+
+    .freq-val {
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .freq-dropdown {
+      position: relative;
+      width: 28px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .freq-dropdown select {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      height: 44px;
+      margin-top: 4px;
+      gap: 4px;
     }
 
     .step-btn {
-      width: 24px;
-      height: 36px;
+      width: 26px;
+      height: 40px;
       padding: 0;
       background: none;
       border: none;
       color: var(--text);
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 700;
       cursor: pointer;
       flex-shrink: 0;
@@ -369,13 +406,13 @@
       margin: 0;
       accent-color: var(--cyan);
       cursor: pointer;
-      height: 4px;
+      height: 6px;
     }
 
     .simple-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 12px;
     }
 
@@ -427,8 +464,8 @@
     <section class="tab-panel active" id="tab-cpu">
       <div class="fixed-header">
         <div class="overall-bar">
-          <div class="bar-fill" id="cpuOverallFill" style="width: 47%"></div>
-          <div class="bar-label-center" id="cpuOverallText">47%</div>
+          <div class="bar-fill" id="cpuOverallFill" style="width: 7%"></div>
+          <div class="bar-label-center" id="cpuOverallText">7%</div>
         </div>
         <div class="bars-card" id="cpuDashBars"></div>
       </div>
@@ -441,47 +478,9 @@
           <div class="bar-fill" style="width: 32%"></div>
           <div class="bar-label-center">32%</div>
         </div>
-        <div class="bars-card">
-          <div class="bar-row">
-            <span class="bar-row-name">GPU</span>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: 55%"></div>
-              <span class="bar-row-val">415MHz</span>
-            </div>
-          </div>
-        </div>
+        <div class="bars-card" id="gpuDashBars"></div>
       </div>
-      <div class="content-list">
-        <div class="cluster-card">
-          <div class="cluster-head">
-            <div class="cluster-id">
-              <div class="cluster-name">GPU</div>
-              <div class="cluster-sub">TĐ.</div>
-            </div>
-            <div class="pill-select pill-gov">
-              <select>
-                <option>msm-adreno-tz</option>
-                <option>performance</option>
-                <option>powersave</option>
-              </select>
-            </div>
-          </div>
-          <div class="freq-row">
-            <span class="freq-label">Tối thiểu</span>
-            <div class="pill-select pill-freq"><select><option>180MHz</option><option>266MHz</option></select></div>
-            <button class="step-btn">—</button>
-            <input type="range" min="0" max="5" value="0" />
-            <button class="step-btn">+</button>
-          </div>
-          <div class="freq-row">
-            <span class="freq-label">Tối đa</span>
-            <div class="pill-select pill-freq"><select><option>680MHz</option><option>585MHz</option></select></div>
-            <button class="step-btn">—</button>
-            <input type="range" min="0" max="5" value="5" />
-            <button class="step-btn">+</button>
-          </div>
-        </div>
-      </div>
+      <div class="content-list" id="gpuControls"></div>
     </section>
 
     <section class="tab-panel" id="tab-io">
@@ -511,28 +510,40 @@
         name: "CPU 1",
         cores: "1,2,3",
         governor: "walt",
+        governors: ["walt", "schedutil", "performance"],
         freqs: ["307MHz", "499MHz", "768MHz", "1,02GHz", "1,34GHz", "1,65GHz", "2,02GHz"],
-        minIdx: 0,
-        maxIdx: 6,
-        curIdx: 3
+        freqIdx: 6,
+        curIdx: 6
       },
       {
         name: "CPU 2",
         cores: "4,5,6,7",
         governor: "walt",
-        freqs: ["499MHz", "768MHz", "1,05GHz", "1,34GHz", "1,65GHz", "2,02GHz", "2,42GHz"],
-        minIdx: 0,
-        maxIdx: 4,
-        curIdx: 4
+        governors: ["walt", "schedutil", "performance"],
+        freqs: ["499MHz", "768MHz", "1,05GHz", "1,34GHz", "1,65GHz", "2,02GHz", "2,80GHz"],
+        freqIdx: 6,
+        curIdx: 6
       },
       {
         name: "CPU 3",
         cores: "8",
         governor: "walt",
-        freqs: ["595MHz", "883MHz", "1,22GHz", "1,49GHz", "1,71GHz", "2,11GHz", "2,65GHz"],
-        minIdx: 0,
-        maxIdx: 4,
-        curIdx: 4
+        governors: ["walt", "schedutil", "performance"],
+        freqs: ["595MHz", "883MHz", "1,22GHz", "1,49GHz", "2,11GHz", "2,65GHz", "3,19GHz"],
+        freqIdx: 6,
+        curIdx: 6
+      }
+    ];
+
+    const gpuCluster = [
+      {
+        name: "GPU",
+        cores: null,
+        governor: "msm-adreno-tz",
+        governors: ["msm-adreno-tz", "performance", "powersave"],
+        freqs: ["180MHz", "266MHz", "355MHz", "415MHz", "585MHz", "680MHz"],
+        freqIdx: 5,
+        curIdx: 3
       }
     ];
 
@@ -555,9 +566,9 @@
       });
     });
 
-    function renderDashboard() {
-      const container = document.getElementById("cpuDashBars");
-      container.innerHTML = clusters.map((c) => {
+    function renderBars(list, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = list.map((c) => {
         const pct = Math.round(((c.curIdx + 1) / c.freqs.length) * 100);
         return `
           <div class="bar-row">
@@ -571,10 +582,10 @@
       }).join("");
     }
 
-    function renderClusters() {
-      const container = document.getElementById("cpuClusters");
+    function renderControlList(list, containerId, dashId) {
+      const container = document.getElementById(containerId);
       container.innerHTML = "";
-      clusters.forEach((c, ci) => {
+      list.forEach((c, ci) => {
         const card = document.createElement("div");
         card.className = "cluster-card";
         card.innerHTML = `
@@ -584,83 +595,79 @@
               <div class="cluster-sub">TĐ.</div>
             </div>
             <div class="pill-select pill-gov">
-              <select>
-                <option ${c.governor === "walt" ? "selected" : ""}>walt</option>
-                <option ${c.governor === "schedutil" ? "selected" : ""}>schedutil</option>
-                <option ${c.governor === "performance" ? "selected" : ""}>performance</option>
+              <select data-gov-ci="${ci}">
+                ${c.governors.map((g) => `<option ${c.governor === g ? "selected" : ""}>${g}</option>`).join("")}
               </select>
             </div>
-            <div class="cores-box">
-              <div>Lõi</div>
-              <div>${c.cores}</div>
+            ${c.cores ? `
+              <div class="cores-box">
+                <div>Lõi</div>
+                <div>${c.cores}</div>
+              </div>
+            ` : ""}
+          </div>
+          <div class="freq-selector-row">
+            <span class="freq-label">Xung nhịp</span>
+            <div class="pill-select pill-freq">
+              <span class="freq-val">${c.freqs[c.freqIdx]}</span>
+              <div class="freq-dropdown">
+                <span>▼</span>
+                <select data-type="freq">
+                  ${c.freqs.map((f, fi) => `<option value="${fi}" ${fi === c.freqIdx ? "selected" : ""}>${f}</option>`).join("")}
+                </select>
+              </div>
             </div>
           </div>
-          <div class="freq-row">
-            <span class="freq-label">Tối thiểu</span>
-            <div class="pill-select pill-freq">
-              <select data-type="min" data-ci="${ci}">
-                ${c.freqs.map((f, fi) => `<option value="${fi}" ${fi === c.minIdx ? "selected" : ""}>${f}</option>`).join("")}
-              </select>
-            </div>
-            <button class="step-btn" data-step="-1" data-type="min" data-ci="${ci}">—</button>
-            <input type="range" min="0" max="${c.freqs.length - 1}" value="${c.minIdx}" data-type="min" data-ci="${ci}" />
-            <button class="step-btn" data-step="1" data-type="min" data-ci="${ci}">+</button>
-          </div>
-          <div class="freq-row">
-            <span class="freq-label">Tối đa</span>
-            <div class="pill-select pill-freq">
-              <select data-type="max" data-ci="${ci}">
-                ${c.freqs.map((f, fi) => `<option value="${fi}" ${fi === c.maxIdx ? "selected" : ""}>${f}</option>`).join("")}
-              </select>
-            </div>
-            <button class="step-btn" data-step="-1" data-type="max" data-ci="${ci}">—</button>
-            <input type="range" min="0" max="${c.freqs.length - 1}" value="${c.maxIdx}" data-type="max" data-ci="${ci}" />
-            <button class="step-btn" data-step="1" data-type="max" data-ci="${ci}">+</button>
+          <div class="slider-row">
+            <button class="step-btn" data-step="-1">—</button>
+            <input type="range" min="0" max="${c.freqs.length - 1}" value="${c.freqIdx}" />
+            <button class="step-btn" data-step="1">+</button>
           </div>
         `;
         container.appendChild(card);
-      });
 
-      container.querySelectorAll("select[data-ci]").forEach((sel) => {
-        sel.addEventListener("change", (e) => {
-          updateClusterFreq(Number(sel.dataset.ci), sel.dataset.type, Number(e.target.value));
+        const valEl = card.querySelector(".freq-val");
+        const selectEl = card.querySelector('select[data-type="freq"]');
+        const rangeInput = card.querySelector('input[type="range"]');
+
+        const syncCard = () => {
+          valEl.textContent = c.freqs[c.freqIdx];
+          selectEl.value = String(c.freqIdx);
+          rangeInput.value = String(c.freqIdx);
+          c.curIdx = c.freqIdx;
+          renderBars(list, dashId);
+        };
+
+        const applyFreq = (nextIdx) => {
+          c.freqIdx = Math.max(0, Math.min(c.freqs.length - 1, nextIdx));
+          syncCard();
+        };
+
+        selectEl.addEventListener("change", (e) => {
+          applyFreq(Number(e.target.value));
         });
-      });
 
-      container.querySelectorAll("input[type='range']").forEach((rng) => {
-        rng.addEventListener("input", (e) => {
-          updateClusterFreq(Number(rng.dataset.ci), rng.dataset.type, Number(e.target.value));
+        rangeInput.addEventListener("input", (e) => {
+          applyFreq(Number(e.target.value));
         });
-      });
 
-      container.querySelectorAll(".step-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const ci = Number(btn.dataset.ci);
-          const type = btn.dataset.type;
-          const delta = Number(btn.dataset.step);
-          const current = type === "min" ? clusters[ci].minIdx : clusters[ci].maxIdx;
-          updateClusterFreq(ci, type, current + delta);
+        card.querySelectorAll(".step-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const delta = Number(btn.dataset.step);
+            applyFreq(c.freqIdx + delta);
+          });
+        });
+
+        card.querySelector("select[data-gov-ci]").addEventListener("change", (e) => {
+          c.governor = e.target.value;
         });
       });
     }
 
-    function updateClusterFreq(ci, type, next) {
-      const c = clusters[ci];
-      const clamped = Math.max(0, Math.min(c.freqs.length - 1, next));
-      if (type === "min") {
-        c.minIdx = clamped;
-        if (c.minIdx > c.maxIdx) c.maxIdx = c.minIdx;
-      } else {
-        c.maxIdx = clamped;
-        if (c.maxIdx < c.minIdx) c.minIdx = c.maxIdx;
-      }
-      c.curIdx = Math.min(c.maxIdx, Math.max(c.minIdx, c.curIdx));
-      renderClusters();
-      renderDashboard();
-    }
-
-    renderDashboard();
-    renderClusters();
+    renderBars(clusters, "cpuDashBars");
+    renderControlList(clusters, "cpuClusters", "cpuDashBars");
+    renderBars(gpuCluster, "gpuDashBars");
+    renderControlList(gpuCluster, "gpuControls", "gpuDashBars");
   </script>
 </body>
 </html>

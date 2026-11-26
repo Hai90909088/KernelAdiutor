@@ -179,16 +179,10 @@ public class CPUFragment extends RecyclerViewFragment {
 
             control.setFreqLabels(freqLabels);
             boolean hasFreqs = freqs != null && !freqs.isEmpty();
-            control.setHasMin(hasFreqs);
-            control.setHasMax(hasFreqs);
             if (hasFreqs) {
-                int minF = mCPUFreq.getMinFreq(cluster.firstCpu, false);
                 int maxF = mCPUFreq.getMaxFreq(cluster.firstCpu, false);
-                control.setMinIndex(findClosestFreqIndex(freqs, minF));
-                control.setMaxIndex(findClosestFreqIndex(freqs, maxF));
-                control.setOnMinFreqSelectedListener(position ->
-                        mCPUFreq.setMinFreq(freqs.get(position), cluster.firstCpu, cluster.lastCpu, getActivity()));
-                control.setOnMaxFreqSelectedListener(position ->
+                control.setFreqIndex(findClosestFreqIndex(freqs, maxF));
+                control.setOnFreqSelectedListener(position ->
                         mCPUFreq.setMaxFreq(freqs.get(position), cluster.firstCpu, cluster.lastCpu, getActivity()));
             }
 
@@ -568,11 +562,8 @@ public class CPUFragment extends RecyclerViewFragment {
                 holder.control.setCurrentGovernor(holder.governor);
             }
             if (holder.freqs != null && !holder.freqs.isEmpty()) {
-                if (holder.minFreq > 0) {
-                    holder.control.setMinIndex(findClosestFreqIndex(holder.freqs, holder.minFreq));
-                }
                 if (holder.maxFreq > 0) {
-                    holder.control.setMaxIndex(findClosestFreqIndex(holder.freqs, holder.maxFreq));
+                    holder.control.setFreqIndex(findClosestFreqIndex(holder.freqs, holder.maxFreq));
                 }
             }
         }

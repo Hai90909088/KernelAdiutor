@@ -33,19 +33,13 @@ public class ClusterControlView extends RecyclerViewItem {
     private View mCoresBtn;
     private TextView mCoresValue;
 
-    private View mMinRow;
-    private View mMinPill;
-    private TextView mMinText;
-    private View mMinMinus;
-    private SeekBar mMinSeekBar;
-    private View mMinPlus;
+    private View mFreqPill;
+    private TextView mFreqText;
 
-    private View mMaxRow;
-    private View mMaxPill;
-    private TextView mMaxText;
-    private View mMaxMinus;
-    private SeekBar mMaxSeekBar;
-    private View mMaxPlus;
+    private View mFreqSliderRow;
+    private View mFreqMinus;
+    private SeekBar mFreqSeekBar;
+    private View mFreqPlus;
 
     private CharSequence mTitle;
     private boolean mShowTunables = true;
@@ -56,18 +50,13 @@ public class ClusterControlView extends RecyclerViewItem {
     private String mCurrentGovernor;
 
     private List<String> mFreqLabels = new ArrayList<>();
-    private boolean mHasMin = true;
-    private boolean mHasMax = true;
-    private int mMinIndex = -1;
-    private int mMaxIndex = -1;
-    private boolean mMinDragging;
-    private boolean mMaxDragging;
+    private int mFreqIndex = -1;
+    private boolean mDragging;
 
     private OnGovernorSelectedListener mGovernorListener;
     private View.OnClickListener mTunablesListener;
     private View.OnClickListener mCoresListener;
-    private OnFreqSelectedListener mMinListener;
-    private OnFreqSelectedListener mMaxListener;
+    private OnFreqSelectedListener mFreqListener;
     private Dialog mDialog;
 
     public static String formatFreqKhz(int khz) {
@@ -110,19 +99,13 @@ public class ClusterControlView extends RecyclerViewItem {
         mCoresBtn = view.findViewById(R.id.cores_btn);
         mCoresValue = view.findViewById(R.id.cores_value);
 
-        mMinRow = view.findViewById(R.id.min_row);
-        mMinPill = view.findViewById(R.id.min_pill);
-        mMinText = view.findViewById(R.id.min_text);
-        mMinMinus = view.findViewById(R.id.min_minus);
-        mMinSeekBar = view.findViewById(R.id.min_seekbar);
-        mMinPlus = view.findViewById(R.id.min_plus);
+        mFreqPill = view.findViewById(R.id.freq_pill);
+        mFreqText = view.findViewById(R.id.freq_text);
 
-        mMaxRow = view.findViewById(R.id.max_row);
-        mMaxPill = view.findViewById(R.id.max_pill);
-        mMaxText = view.findViewById(R.id.max_text);
-        mMaxMinus = view.findViewById(R.id.max_minus);
-        mMaxSeekBar = view.findViewById(R.id.max_seekbar);
-        mMaxPlus = view.findViewById(R.id.max_plus);
+        mFreqSliderRow = view.findViewById(R.id.freq_slider_row);
+        mFreqMinus = view.findViewById(R.id.freq_minus);
+        mFreqSeekBar = view.findViewById(R.id.freq_seekbar);
+        mFreqPlus = view.findViewById(R.id.freq_plus);
 
         mTunablesBtn.setOnClickListener(v -> {
             if (mShowTunables && mTunablesListener != null) {
@@ -137,55 +120,32 @@ public class ClusterControlView extends RecyclerViewItem {
         });
 
         mGovernorPill.setOnClickListener(v -> showGovernorDialog(v.getContext()));
-        mMinPill.setOnClickListener(v -> showFreqDialog(v.getContext(), true));
-        mMaxPill.setOnClickListener(v -> showFreqDialog(v.getContext(), false));
+        mFreqPill.setOnClickListener(v -> showFreqDialog(v.getContext()));
 
-        mMinMinus.setOnClickListener(v -> stepFreq(true, -1));
-        mMinPlus.setOnClickListener(v -> stepFreq(true, 1));
-        mMaxMinus.setOnClickListener(v -> stepFreq(false, -1));
-        mMaxPlus.setOnClickListener(v -> stepFreq(false, 1));
+        mFreqMinus.setOnClickListener(v -> stepFreq(-1));
+        mFreqPlus.setOnClickListener(v -> stepFreq(1));
 
-        mMinSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        mFreqSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && progress >= 0 && progress < mFreqLabels.size()) {
-                    mMinText.setText(mFreqLabels.get(progress));
+                    mFreqText.setText(mFreqLabels.get(progress));
                 }
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-                mMinDragging = true;
+                mDragging = true;
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                mMinDragging = false;
-                applyFreqIndex(true, seekBar.getProgress());
+                mDragging = false;
+                applyFreqIndex(seekBar.getProgress());
             }
         });
 
-        mMaxSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && progress >= 0 && progress < mFreqLabels.size()) {
-                    mMaxText.setText(mFreqLabels.get(progress));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                mMaxDragging = true;
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                mMaxDragging = false;
-                applyFreqIndex(false, seekBar.getProgress());
-            }
-        });
-
-        View.OnTouchListener seekBarTouchListener = (v, event) -> {
+        mFreqSeekBar.setOnTouchListener((v, event) -> {
             ViewParent parent = v.getParent();
             if (parent != null) {
                 int action = event.getActionMasked();
@@ -193,42 +153,27 @@ public class ClusterControlView extends RecyclerViewItem {
                         action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE);
             }
             return false;
-        };
-        mMinSeekBar.setOnTouchListener(seekBarTouchListener);
-        mMaxSeekBar.setOnTouchListener(seekBarTouchListener);
+        });
 
         super.onCreateView(view);
         setFullSpan(true);
     }
 
-    private void stepFreq(boolean isMin, int delta) {
+    private void stepFreq(int delta) {
         if (mFreqLabels.isEmpty()) return;
-        int current = isMin ? mMinIndex : mMaxIndex;
+        int current = mFreqIndex;
         if (current < 0) current = 0;
         int next = Math.max(0, Math.min(mFreqLabels.size() - 1, current + delta));
         if (next != current) {
-            applyFreqIndex(isMin, next);
+            applyFreqIndex(next);
         }
     }
 
-    private void applyFreqIndex(boolean isMin, int index) {
+    private void applyFreqIndex(int index) {
         if (index < 0 || index >= mFreqLabels.size()) return;
-        if (isMin) {
-            mMinIndex = index;
-            if (mMaxIndex >= 0 && index > mMaxIndex) {
-                mMaxIndex = index;
-            }
-            if (mMinListener != null) {
-                mMinListener.onFreqSelected(index);
-            }
-        } else {
-            mMaxIndex = index;
-            if (mMinIndex >= 0 && index < mMinIndex) {
-                mMinIndex = index;
-            }
-            if (mMaxListener != null) {
-                mMaxListener.onFreqSelected(index);
-            }
+        mFreqIndex = index;
+        if (mFreqListener != null) {
+            mFreqListener.onFreqSelected(index);
         }
         refresh();
     }
@@ -252,15 +197,14 @@ public class ClusterControlView extends RecyclerViewItem {
         mDialog.show();
     }
 
-    private void showFreqDialog(Context context, boolean isMin) {
+    private void showFreqDialog(Context context) {
         if (mFreqLabels.isEmpty()) return;
         String[] items = mFreqLabels.toArray(new String[0]);
         mDialog = new Dialog(context)
-                .setItems(items, (dialog, which) -> applyFreqIndex(isMin, which))
+                .setItems(items, (dialog, which) -> applyFreqIndex(which))
                 .setOnDismissListener(dialog -> mDialog = null);
         if (mTitle != null) {
-            mDialog.setTitle(mTitle + " - " + context.getString(
-                    isMin ? R.string.cpu_min_short : R.string.cpu_max_short));
+            mDialog.setTitle(mTitle + " - " + context.getString(R.string.frequencies));
         }
         mDialog.show();
     }
@@ -314,40 +258,30 @@ public class ClusterControlView extends RecyclerViewItem {
         refresh();
     }
 
-    public void setHasMin(boolean hasMin) {
-        mHasMin = hasMin;
-        refresh();
+    public void setFreqIndex(int index) {
+        if (mDragging) return;
+        mFreqIndex = index;
+        syncSliderAndLabels();
     }
 
-    public void setHasMax(boolean hasMax) {
-        mHasMax = hasMax;
-        refresh();
+    public void setOnFreqSelectedListener(OnFreqSelectedListener listener) {
+        mFreqListener = listener;
     }
 
-    public void setMinIndex(int index) {
-        if (mMinDragging) return;
-        mMinIndex = index;
-        if (mMinSeekBar != null && mFreqLabels.size() > 1 && index >= 0 && index < mFreqLabels.size()) {
-            mMinSeekBar.setProgress(index);
-            mMinText.setText(mFreqLabels.get(index));
+    private void syncSliderAndLabels() {
+        int maxProgress = Math.max(0, mFreqLabels.size() - 1);
+        if (mFreqIndex < 0 || mFreqIndex > maxProgress) {
+            mFreqIndex = maxProgress;
         }
-    }
-
-    public void setMaxIndex(int index) {
-        if (mMaxDragging) return;
-        mMaxIndex = index;
-        if (mMaxSeekBar != null && mFreqLabels.size() > 1 && index >= 0 && index < mFreqLabels.size()) {
-            mMaxSeekBar.setProgress(index);
-            mMaxText.setText(mFreqLabels.get(index));
+        if (mFreqText != null && !mFreqLabels.isEmpty() && mFreqIndex >= 0 && mFreqIndex < mFreqLabels.size()) {
+            mFreqText.setText(mFreqLabels.get(mFreqIndex));
         }
-    }
-
-    public void setOnMinFreqSelectedListener(OnFreqSelectedListener listener) {
-        mMinListener = listener;
-    }
-
-    public void setOnMaxFreqSelectedListener(OnFreqSelectedListener listener) {
-        mMaxListener = listener;
+        if (mFreqSeekBar != null) {
+            mFreqSeekBar.setMax(maxProgress);
+            if (!mDragging) {
+                mFreqSeekBar.setProgress(mFreqIndex);
+            }
+        }
     }
 
     @Override
@@ -373,28 +307,16 @@ public class ClusterControlView extends RecyclerViewItem {
                     ? mCurrentGovernor : mGovernorText.getContext().getString(R.string.unknown));
         }
 
-        int maxProgress = Math.max(0, mFreqLabels.size() - 1);
-        if (mMinRow != null) {
-            boolean showMin = mHasMin && !mFreqLabels.isEmpty();
-            mMinRow.setVisibility(showMin ? View.VISIBLE : View.GONE);
-            if (showMin) {
-                mMinSeekBar.setMax(maxProgress);
-                if (!mMinDragging && mMinIndex >= 0 && mMinIndex < mFreqLabels.size()) {
-                    mMinSeekBar.setProgress(mMinIndex);
-                    mMinText.setText(mFreqLabels.get(mMinIndex));
-                }
-            }
+        boolean hasFreqs = !mFreqLabels.isEmpty();
+        if (mFreqPill != null) {
+            mFreqPill.setVisibility(hasFreqs ? View.VISIBLE : View.GONE);
         }
-        if (mMaxRow != null) {
-            boolean showMax = mHasMax && !mFreqLabels.isEmpty();
-            mMaxRow.setVisibility(showMax ? View.VISIBLE : View.GONE);
-            if (showMax) {
-                mMaxSeekBar.setMax(maxProgress);
-                if (!mMaxDragging && mMaxIndex >= 0 && mMaxIndex < mFreqLabels.size()) {
-                    mMaxSeekBar.setProgress(mMaxIndex);
-                    mMaxText.setText(mFreqLabels.get(mMaxIndex));
-                }
-            }
+        if (mFreqSliderRow != null) {
+            mFreqSliderRow.setVisibility(hasFreqs ? View.VISIBLE : View.GONE);
+        }
+
+        if (hasFreqs) {
+            syncSliderAndLabels();
         }
     }
 
