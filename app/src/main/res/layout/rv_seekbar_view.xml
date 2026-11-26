@@ -37,7 +37,7 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:gravity="center_vertical">
 
         <android.support.v7.widget.AppCompatButton
@@ -51,14 +51,16 @@
 
         <org.adw.library.widgets.discreteseekbar.DiscreteSeekBar
             android:id="@+id/seekbar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
             android:layout_centerVertical="true"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:layout_toEndOf="@+id/button_minus"
             android:layout_toLeftOf="@+id/button_plus"
             android:layout_toRightOf="@+id/button_minus"
             android:layout_toStartOf="@+id/button_plus"
-            app:dsb_allowTrackClickToDrag="false"
+            app:dsb_allowTrackClickToDrag="true"
             app:dsb_indicatorPopupEnabled="false"
             app:dsb_progressColor="?attr/colorAccent" />
 
